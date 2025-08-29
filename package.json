@@ -1,20 +1,14 @@
 {
-  "name": "minecraft-multiplayer",
+  "name": "socket-app",
   "version": "1.0.0",
-  "description": "Çok oyunculu Minecraft sunucusu",
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
     "socket.io": "^4.7.2"
-  },
- 
   }
-
 }
-
 
