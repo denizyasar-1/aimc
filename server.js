@@ -14,7 +14,7 @@ const io = new Server(server, {
 });
 
 // Statik dosyaları sun
-app.use(express.static(path.join(__dirname, "public"))); // index.html burada olmalı
+app.use(express.static(path.join(__dirname, "aimc"))); // index.html burada olmalı
 
 // Socket.io olayları
 io.on("connection", (socket) => {
@@ -40,3 +40,4 @@ io.on("connection", (socket) => {
 // Render PORT ortam değişkeni kullanılır
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server ${PORT} portunda çalışıyor...`));
+
