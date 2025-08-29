@@ -1,465 +1,1345 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kişisel Web Sitesi</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .editor {
-            min-height: 300px;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 16px;
-            outline: none;
-            transition: border-color 0.3s;
-        }
-        .editor:focus {
-            border-color: #3b82f6;
-        }
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .card-hover {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .card-hover:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-        }
-        .pulse-animation {
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,初始.scale=1" />
+  <title>Renkli Mini Minecraft - Çok Oyunculu</title>
+  <style>
+    html, body { height: 100%; margin: 0; overflow: hidden; background: #111; }
+    #ui { position: fixed; inset: 0 auto auto 0; color: #fff; font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif; pointer-events: none; }
+    .panel { position: absolute; left: 16px; top: 16px; background: rgba(0,0,0,.55); padding: 12px 14px; border-radius: 14px; backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,.08); pointer-events: auto; }
+    .panel h1 { font-size: 14px; margin: 0 0 8px; letter-spacing: .3px; font-weight: 700; }
+    .panel p { margin: 4px 0; font-size: 12px; line-height: 1.45; opacity: .95; }
+    .hotbar { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); display: grid; grid-auto-flow: column; gap: 8px; }
+    .slot { width: 46px; height: 46px; border-radius: 10px; border: 1px solid rgba(255,255,255,.15); background: rgba(0,0,0,.35); display: grid; place-content: center; color: #fff; font-weight: 700; }
+    .slot.active { outline: 2px solid #fff; outline-offset: 2px; }
+    .crosshair { position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; transform: translate(-50%, -50%); }
+    .crosshair::before, .crosshair::after { content: ""; position: absolute; background: #fff; opacity: .8; }
+    .crosshair::before { left: 6px; top: 0; width: 2px; height: 14px; }
+    .crosshair::after { top: 6px; left: 0; height: 2px; width: 14px; }
+    .hint { position: absolute; right: 16px; bottom: 16px; color: #9ae6b4; font-size: 12px; background: rgba(0,0,0,.4); padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,.08); }
+    canvas { display: block; }
+    .badge { display:inline-block; padding:2px 6px; border-radius:6px; background:#2d3748; font-size:11px; margin-left:6px; border:1px solid rgba(255,255,255,.12);}
+    
+    /* Yeni envanter stil kuralları */
+    #inventory {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.85);
+      border: 2px solid #555;
+      border-radius: 8px;
+      padding: 20px;
+      display: none;
+      z-index: 1000;
+      backdrop-filter: blur(4px);
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+    
+    #inventory.visible {
+      display: block;
+    }
+    
+    .inventory-title {
+      color: white;
+      text-align: center;
+      margin-bottom: 15px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    
+    .inventory-grid {
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      gap: 8px;
+      max-width: 500px;
+    }
+    
+    .inventory-slot {
+      width: 50px;
+      height: 50px;
+      background: rgba(100, 100, 100, 0.3);
+      border: 1px solid #666;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s;
+    }
+    
+    .inventory-slot:hover {
+      background: rgba(150, 150, 150, 0.5);
+      transform: scale(1.05);
+    }
+    
+    .inventory-slot.selected {
+      border: 2px solid #fff;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+    
+    .item-count {
+      position: absolute;
+      bottom: 2px;
+      right: 4px;
+      font-size: 12px;
+      color: #fff;
+    }
+    
+    .close-inventory {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #ff4444;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    
+    .close-inventory:hover {
+      background: #ff6666;
+    }
+    
+    /* Kırılma ilerleme çubuğu */
+    #break-progress {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100px;
+      height: 8px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 4px;
+      display: none;
+      z-index: 100;
+    }
+    
+    #break-progress-bar {
+      height: 100%;
+      background: #ff5555;
+      border-radius: 4px;
+      width: 0%;
+      transition: width 0.1s;
+    }
+    
+    /* FPS ve Chunk bilgisi */
+    #debug-info {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      background: rgba(0,0,0,.55);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-family: monospace;
+    }
+    
+    /* Çok oyunculu bilgi */
+    #multiplayer-info {
+      position: fixed;
+      top: 60px;
+      right: 16px;
+      background: rgba(0,0,0,.55);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-family: monospace;
+    }
+    
+    /* Uzak oyuncular için stil */
+    .remote-player-label {
+      position: absolute;
+      background: rgba(0,0,0,.7);
+      color: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      pointer-events: none;
+      transform: translate(-50%, -30px);
+    }
+  </style>
+
+  <!-- Import map: three'ü modül olarak çözmek için. -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "socket.io": "https://cdn.socket.io/4.7.2/socket.io.esm.min.js"
+    }
+  }
+  </script>
 </head>
-<body class="bg-gray-50 font-sans">
-    <!-- Header -->
-    <header class="gradient-bg text-white py-16">
-        <div class="container mx-auto px-6 text-center">
-            <h1 class="text-5xl font-bold mb-4">Hoş Geldiniz</h1>
-            <p class="text-xl opacity-90">Modern ve işlevsel web siteniz</p>
-        </div>
-    </header>
+<body>
+  <div id="ui">
+    <div class="panel" id="help">
+      <h1>Mini Minecraft (Çok Oyunculu) <span class="badge">128x128 Dünya</span></h1>
+      <p><b>Bakınma:</b> fareyi <u>basılı tutup sürükle</u>.</p>
+      <p><b>W A S D</b>: yürü — <b>Space</b>: zıpla — <b>Shift</b>: hızlı koş</p>
+      <p><b>Sol tık basılı tut</b>: blok kır — <b>Sağ tık</b>: blok yerleştir</p>
+      <p><b>1</b>: Çimen, <b>2</b>: Toprak, <b>3</b>: Taş, <b>4</b>: Tahta</p>
+      <p><b>5</b>: Kömür, <b>6</b>: Demir, <b>7</b>: Altın, <b>8</b>: Elmas</p>
+      <p><b>R</b>: rastgele ağaçlar — <b>G</b>: sis (fog) aç/kapat</p>
+      <p><b>E</b>: envanteri aç/kapat</p>
+      <p style="opacity:.8">YENİ: Çok oyunculu destekli chunk sistemi!</p>
+    </div>
+    <div class="hotbar" id="hotbar"></div>
+    <div class="crosshair"></div>
+    <div class="hint">İpucu: Arkadaşlarınızla aynı dünyada oynayın!</div>
+  </div>
 
-    <!-- Main Content -->
-    <main class="container mx-auto px-6 py-12">
-        <!-- Soru Cevap Section -->
-        <section class="mb-16">
-            <div class="bg-white rounded-lg shadow-lg p-8 card-hover">
-                <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
-                    <span class="mr-3">❓</span>
-                    SORU CEVAP
-                </h2>
-                <div class="mb-4">
-                    <label for="webhookUrl" class="block text-sm font-medium text-gray-700 mb-2">Webhook URL</label>
-                    <input type="url" id="webhookUrl" value="https://denizyasarakko.app.n8n.cloud/webhook-test/86cae530-ec9b-4625-88c3-b7b25d3b06f2" readonly
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600">
-                </div>
-                <div class="mb-6">
-                    <label for="webhookData" class="block text-sm font-medium text-gray-700 mb-2">Sorunuz</label>
-                    <textarea id="webhookData" rows="4" placeholder="Sorunuzu buraya yazın..." 
-                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"></textarea>
-                </div>
-                <div class="flex gap-4">
-                    <button onclick="testWebhook()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-semibold transition-colors">
-                        🧪 Test Et
-                    </button>
-                    <button onclick="sendWebhook()" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-lg font-semibold transition-colors">
-                        🚀 Gönder
-                    </button>
-                </div>
-                <div id="webhookStatus" class="mt-4 p-4 rounded-lg hidden"></div>
-            </div>
-        </section>
+  <!-- Kırılma ilerleme çubuğu -->
+  <div id="break-progress">
+    <div id="break-progress-bar"></div>
+  </div>
 
-        <!-- API Endpoint Section -->
-        <section class="mb-16">
-            <div class="bg-white rounded-lg shadow-lg p-8 card-hover">
-                <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
-                    <span class="mr-3">🔗</span>
-                    API ENDPOINT
-                </h2>
-                <div class="bg-gray-50 p-4 rounded-lg mb-4">
-                    <p class="text-sm text-gray-600 mb-2">Bu siteye istek göndermek için:</p>
-                    <code class="text-blue-600 font-mono text-sm">window.postMessage({type: 'API_REQUEST', data: 'mesajınız'}, '*')</code>
-                </div>
-                <div class="bg-blue-50 p-4 rounded-lg">
-                    <h3 class="font-bold text-blue-800 mb-2">📨 Gelen İstekler:</h3>
-                    <div id="incomingRequests" class="space-y-2">
-                        <p class="text-gray-500 text-sm">Henüz gelen istek yok...</p>
-                    </div>
-                </div>
-            </div>
-        </section>
+  <!-- Debug bilgisi -->
+  <div id="debug-info">
+    FPS: <span id="fps-counter">0</span> | 
+    Chunks: <span id="chunk-counter">0</span> | 
+    Blocks: <span id="block-counter">0</span>
+  </div>
 
-        <!-- Yanıtlar Section -->
-        <section class="mb-16">
-            <div class="bg-white rounded-lg shadow-lg p-8 card-hover">
-                <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
-                    <span class="mr-3">💬</span>
-                    YANITLAR
-                </h2>
-                <div id="responseContainer" class="space-y-4">
-                    <p class="text-gray-500 text-center py-8">Henüz yanıt yok. Yukarıdan bir soru gönderin!</p>
-                </div>
-            </div>
-        </section>
+  <!-- Çok oyunculu bilgi -->
+  <div id="multiplayer-info">
+    Oyuncular: <span id="player-count">1</span> | 
+    Durum: <span id="connection-status">Bağlanılıyor...</span>
+  </div>
 
-        <!-- Text Editor Section -->
-        <section class="mb-16">
-            <div class="bg-white rounded-lg shadow-lg p-8 card-hover">
-                <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
-                    <span class="mr-3">✍️</span>
-                    Yazı Editörü
-                </h2>
-                <div class="mb-4">
-                    <label for="title" class="block text-sm font-medium text-gray-700 mb-2">Başlık</label>
-                    <input type="text" id="title" placeholder="Yazınızın başlığını girin..." 
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                </div>
-                <div class="mb-6">
-                    <label for="content" class="block text-sm font-medium text-gray-700 mb-2">İçerik</label>
-                    <div id="content" contenteditable="true" class="editor" placeholder="Yazınızı buraya yazın...">
-                        <p>Buraya yazınızı yazabilirsiniz. Bu editör ile metninizi düzenleyebilir, paragraflar oluşturabilirsiniz.</p>
-                    </div>
-                </div>
-                <div class="flex gap-4 mb-6">
-                    <button onclick="formatText('bold')" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg font-bold">B</button>
-                    <button onclick="formatText('italic')" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg italic">I</button>
-                    <button onclick="formatText('underline')" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg underline">U</button>
-                    <button onclick="clearContent()" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg">Temizle</button>
-                </div>
-                <button onclick="saveContent()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-semibold transition-colors">
-                    💾 Kaydet
-                </button>
-            </div>
-        </section>
+  <!-- Yeni envanter paneli -->
+  <div id="inventory">
+    <div class="inventory-title">Envanter</div>
+    <button class="close-inventory" onclick="toggleInventory()">Kapat (E)</button>
+    <div class="inventory-grid" id="inventoryGrid"></div>
+  </div>
 
-        <!-- Saved Content Display -->
-        <section>
-            <div class="bg-white rounded-lg shadow-lg p-8 card-hover">
-                <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
-                    <span class="mr-3">📄</span>
-                    Kaydedilen İçerik
-                </h2>
-                <div id="savedContent" class="min-h-32 p-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                    <p class="text-gray-500 text-center">Henüz kaydedilmiş içerik yok</p>
-                </div>
-            </div>
-        </section>
-    </main>
+  <script type="module">
+    import * as THREE from 'three';
 
-    <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-8 mt-16">
-        <div class="container mx-auto px-6 text-center">
-            <p>&copy; 2024 Kişisel Web Sitesi. Tüm hakları saklıdır.</p>
-        </div>
-    </footer>
+    // === Temel Ayarlar ===
+    const WORLD_SIZE = 128; // 128x128 dünya
+    const WORLD_HEIGHT = 10; // 10 katman
+    const CHUNK_SIZE = 16; // Her chunk 16x16
+    const RENDER_DISTANCE = 2; // 2 chunk render mesafesi
+    const BLOCK = 1;
+    let currentBlockType = 0;
+    let playerId = 'player_' + Math.random().toString(36).substr(2, 9);
 
-    <script>
-        // Text Editor Functions
-        function formatText(command) {
-            document.execCommand(command, false, null);
-            document.getElementById('content').focus();
-        }
+    // Chunk hesaplama
+    const CHUNKS_X = Math.ceil(WORLD_SIZE / CHUNK_SIZE);
+    const CHUNKS_Z = Math.ceil(WORLD_SIZE / CHUNK_SIZE);
 
-        function clearContent() {
-            if (confirm('İçeriği temizlemek istediğinizden emin misiniz?')) {
-                document.getElementById('content').innerHTML = '';
-                document.getElementById('title').value = '';
+    // Geliştirilmiş blok tipleri
+    const BLOCK_TYPES = [
+      { key: 'grass', label: '1', colorTop: 0x6abf69, colorSide: 0x4d9b4b, breakTime: 0.8 },
+      { key: 'dirt',  label: '2', colorTop: 0x8b5a2b, colorSide: 0x6f4620, breakTime: 0.6 },
+      { key: 'stone', label: '3', colorTop: 0x9aa0a6, colorSide: 0x7a8086, breakTime: 1.5 },
+      { key: 'wood',  label: '4', colorTop: 0xcaa472, colorSide: 0xa17f5b, breakTime: 1.0 },
+      { key: 'coal',  label: '5', colorTop: 0x2d2d2d, colorSide: 0x1a1a1a, breakTime: 2.0 },
+      { key: 'iron',  label: '6', colorTop: 0xd8d8d8, colorSide: 0xb0b0b0, breakTime: 2.5 },
+      { key: 'gold',  label: '7', colorTop: 0xffd700, colorSide: 0xe6c200, breakTime: 2.0 },
+      { key: 'diamond',label: '8',colorTop: 0x00ffff, colorSide: 0x00cccc, breakTime: 3.0 },
+    ];
+
+    // Hotbar UI
+    const hotbar = document.getElementById('hotbar');
+    BLOCK_TYPES.forEach((t, i) => {
+      const el = document.createElement('div');
+      el.className = 'slot' + (i === currentBlockType ? ' active' : '');
+      el.textContent = t.label;
+      el.dataset.index = i;
+      hotbar.appendChild(el);
+    });
+    const updateHotbar = () => { [...hotbar.children].forEach((c, i) => c.classList.toggle('active', i === currentBlockType)); };
+
+    // === THREE.js Kurulum ===
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87ceeb);
+    scene.fog = new THREE.Fog(0x87ceeb, 20, 60); // 2 chunk = 32 blok
+
+    const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 100);
+    const player = new THREE.Object3D();
+    player.position.set(WORLD_SIZE / 2, 5, WORLD_SIZE / 2);
+    camera.position.set(0, 1.6, 0);
+    player.add(camera);
+    scene.add(player);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: false });
+    renderer.setPixelRatio(1);
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.shadowMap.enabled = false;
+    document.body.appendChild(renderer.domElement);
+
+    // Işıklar
+    const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambient);
+    const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+    dir.position.set(40, 60, 20);
+    scene.add(dir);
+
+    // Hedef bloğu vurgulamak için mesh
+    const highlightGeo = new THREE.BoxGeometry(1.002, 1.002, 1.002);
+    const highlightMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.25, depthWrite: false });
+    const highlightMesh = new THREE.Mesh(highlightGeo, highlightMat);
+    scene.add(highlightMesh);
+
+    // === Çok Oyunculu Sistem ===
+    let socket = null;
+    const remotePlayers = new Map();
+    let lastPositionSend = 0;
+
+    // Socket.io bağlantısı
+    function connectToServer() {
+      try {
+        // Socket.io client'ı yüklemeye çalış
+        import('socket.io').then(({ default: io }) => {
+          socket = io('https://your-render-app.onrender.com'); // Gerçek sunucu adresinizi buraya yazın
+          
+          socket.on('connect', () => {
+            document.getElementById('connection-status').textContent = 'Bağlandı';
+            console.log('Sunucuya bağlandı:', socket.id);
+            
+            // Sunucuya katılma mesajı gönder
+            socket.emit('join', {
+              id: playerId,
+              username: 'Oyuncu' + Math.floor(Math.random() * 1000),
+              x: player.position.x,
+              y: player.position.y,
+              z: player.position.z,
+              yaw: 0,
+              pitch: 0
+            });
+          });
+          
+          socket.on('disconnect', () => {
+            document.getElementById('connection-status').textContent = 'Bağlantı Kesildi';
+            console.log('Sunucu bağlantısı kesildi');
+          });
+          
+          socket.on('connect_error', (error) => {
+            document.getElementById('connection-status').textContent = 'Bağlantı Hatası';
+            console.log('Bağlantı hatası:', error);
+          });
+          
+          // Diğer oyuncuların katılma mesajı
+          socket.on('playerJoined', (playerData) => {
+            if (playerData.id !== playerId) {
+              addRemotePlayer(playerData);
             }
-        }
-
-        function saveContent() {
-            const title = document.getElementById('title').value;
-            const content = document.getElementById('content').innerHTML;
-            
-            if (!title.trim() && !content.trim()) {
-                showNotification('Lütfen başlık veya içerik girin!', 'error');
-                return;
+            updatePlayerCount();
+          });
+          
+          // Diğer oyuncuların hareketi
+          socket.on('playerMoved', (playerData) => {
+            if (playerData.id !== playerId) {
+              updateRemotePlayer(playerData);
             }
-
-            const savedData = {
-                title: title,
-                content: content,
-                timestamp: new Date().toLocaleString('tr-TR')
-            };
-
-            // Save to localStorage
-            localStorage.setItem('savedContent', JSON.stringify(savedData));
-            
-            // Display saved content
-            displaySavedContent(savedData);
-            
-            showNotification('İçerik başarıyla kaydedildi!', 'success');
-        }
-
-        function displaySavedContent(data) {
-            const savedContentDiv = document.getElementById('savedContent');
-            savedContentDiv.innerHTML = `
-                <div class="bg-white p-6 rounded-lg border">
-                    <h3 class="text-xl font-bold text-gray-800 mb-2">${data.title || 'Başlıksız'}</h3>
-                    <div class="text-gray-600 mb-4">${data.content}</div>
-                    <p class="text-sm text-gray-500">Kaydedilme: ${data.timestamp}</p>
-                </div>
-            `;
-        }
-
-        // Webhook Functions
-        async function testWebhook() {
-            const url = document.getElementById('webhookUrl').value;
-            
-            showWebhookStatus('Test ediliyor...', 'info');
-
-            try {
-                const testData = "Bu bir test mesajıdır - " + new Date().toLocaleString('tr-TR');
-
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'text/plain',
-                        'Accept': 'text/plain'
-                    },
-                    body: testData,
-                    mode: 'no-cors' // CORS sorunlarını önlemek için
-                });
-
-                // no-cors modunda response.ok kontrol edilemez
-                showWebhookStatus('✅ Test mesajı gönderildi!', 'success');
-                
-            } catch (error) {
-                if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-                    showWebhookStatus(`❌ Bağlantı hatası: URL erişilebilir değil veya CORS sorunu var.`, 'error');
-                } else {
-                    showWebhookStatus(`❌ Hata: ${error.message}`, 'error');
-                }
+          });
+          
+          // Oyuncu ayrıldığında
+          socket.on('playerLeft', (playerData) => {
+            removeRemotePlayer(playerData.id);
+            updatePlayerCount();
+          });
+          
+          // Blok güncelleme
+          socket.on('blockUpdate', (blockData) => {
+            if (blockData.action === 'remove') {
+              removeBlock(blockData.x, blockData.y, blockData.z, true); // Sunucudan gelen
+            } else if (blockData.action === 'add') {
+              addBlock(blockData.x, blockData.y, blockData.z, blockData.type, true); // Sunucudan gelen
             }
-        }
-
-        async function sendWebhook() {
-            const url = document.getElementById('webhookUrl').value;
-            const dataText = document.getElementById('webhookData').value;
-            
-            if (!dataText.trim()) {
-                showNotification('Lütfen sorunuzu yazın!', 'error');
-                return;
-            }
-
-            showWebhookStatus('Soru gönderiliyor...', 'info');
-            
-            // Soruyu yanıtlar bölümüne ekle
-            addQuestionToResponse(dataText);
-
-            // CORS proxy kullanarak istek gönder
-            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
-            
-            try {
-                const response = await fetch(proxyUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'text/plain'
-                    },
-                    body: dataText
-                });
-
-                if (response.ok) {
-                    const responseText = await response.text();
-                    showWebhookStatus('✅ Sorunuz gönderildi ve yanıt alındı!', 'success');
-                    updateLastResponse(responseText);
-                } else {
-                    showWebhookStatus(`❌ Sunucu hatası: ${response.status} ${response.statusText}`, 'error');
-                    updateLastResponse(`Hata: ${response.status} - ${response.statusText}`);
-                }
-                
-            } catch (error) {
-                // Proxy başarısız olursa, doğrudan deneme (no-cors ile)
-                try {
-                    await fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'text/plain'
-                        },
-                        body: dataText,
-                        mode: 'no-cors'
-                    });
-                    
-                    showWebhookStatus('✅ Soru gönderildi! (Yanıt CORS nedeniyle alınamadı)', 'success');
-                    updateLastResponse('Soru başarıyla gönderildi. CORS kısıtlaması nedeniyle yanıt görüntülenemiyor.');
-                    
-                } catch (finalError) {
-                    showWebhookStatus(`❌ Bağlantı hatası: ${error.message}`, 'error');
-                    updateLastResponse(`Bağlantı hatası: ${error.message}`);
-                }
-            }
-            
-            // Soruyu temizle
-            document.getElementById('webhookData').value = '';
-        }
-
-        function addQuestionToResponse(question) {
-            const container = document.getElementById('responseContainer');
-            
-            // İlk soru ise placeholder'ı kaldır
-            if (container.children.length === 1 && container.children[0].textContent.includes('Henüz yanıt yok')) {
-                container.innerHTML = '';
-            }
-            
-            const questionDiv = document.createElement('div');
-            questionDiv.className = 'bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg';
-            questionDiv.innerHTML = `
-                <div class="flex items-start">
-                    <span class="text-blue-600 font-bold mr-2">S:</span>
-                    <div class="flex-1">
-                        <p class="text-gray-800">${question}</p>
-                        <p class="text-xs text-gray-500 mt-2">${new Date().toLocaleString('tr-TR')}</p>
-                    </div>
-                </div>
-            `;
-            
-            container.appendChild(questionDiv);
-            
-            // Yanıt için placeholder ekle
-            const responseDiv = document.createElement('div');
-            responseDiv.className = 'bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg';
-            responseDiv.innerHTML = `
-                <div class="flex items-start">
-                    <span class="text-green-600 font-bold mr-2">C:</span>
-                    <div class="flex-1">
-                        <p class="text-gray-600 italic">Yanıt bekleniyor...</p>
-                    </div>
-                </div>
-            `;
-            
-            container.appendChild(responseDiv);
-            
-            // En son eklenen yanıta scroll
-            responseDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-
-        function updateLastResponse(response) {
-            const container = document.getElementById('responseContainer');
-            const responseElements = container.querySelectorAll('.bg-green-50');
-            
-            if (responseElements.length > 0) {
-                const lastResponse = responseElements[responseElements.length - 1];
-                lastResponse.innerHTML = `
-                    <div class="flex items-start">
-                        <span class="text-green-600 font-bold mr-2">C:</span>
-                        <div class="flex-1">
-                            <p class="text-gray-800 whitespace-pre-wrap">${response}</p>
-                            <p class="text-xs text-gray-500 mt-2">${new Date().toLocaleString('tr-TR')}</p>
-                        </div>
-                    </div>
-                `;
-                
-                // Yanıta scroll
-                lastResponse.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
-        }
-
-        function showWebhookStatus(message, type) {
-            const statusDiv = document.getElementById('webhookStatus');
-            statusDiv.className = `mt-4 p-4 rounded-lg ${
-                type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' :
-                type === 'error' ? 'bg-red-100 text-red-800 border border-red-200' :
-                'bg-blue-100 text-blue-800 border border-blue-200'
-            }`;
-            statusDiv.textContent = message;
-            statusDiv.classList.remove('hidden');
-        }
-
-        function showNotification(message, type) {
-            const notification = document.createElement('div');
-            notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
-                type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-            }`;
-            notification.textContent = message;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.remove();
-            }, 3000);
-        }
-
-        // API Endpoint functionality - Listen for incoming messages
-        window.addEventListener('message', function(event) {
-            // Güvenlik için origin kontrolü yapabilirsiniz
-            // if (event.origin !== 'https://trusted-domain.com') return;
-            
-            if (event.data && event.data.type === 'API_REQUEST') {
-                const requestData = event.data.data;
-                const timestamp = new Date().toLocaleString('tr-TR');
-                
-                // Gelen isteği göster
-                addIncomingRequest(requestData, timestamp);
-                
-                // Otomatik yanıt gönder (isteğe bağlı)
-                const response = {
-                    type: 'API_RESPONSE',
-                    data: `Mesajınız alındı: "${requestData}"`,
-                    timestamp: timestamp,
-                    status: 'success'
-                };
-                
-                // Yanıtı gönderen pencereye geri gönder
-                event.source.postMessage(response, event.origin);
-            }
+          });
+          
+          // Dünya durumu
+          socket.on('worldState', (worldData) => {
+            // Mevcut blokları yükle
+            worldData.blocks.forEach(blockData => {
+              addBlock(blockData.x, blockData.y, blockData.z, blockData.type, true);
+            });
+          });
+        }).catch(error => {
+          console.log('Socket.io yüklenemedi, tek oyunculu modda devam ediliyor');
+          document.getElementById('connection-status').textContent = 'Tek Oyunculu';
         });
+      } catch (error) {
+        console.log('Socket.io başlatılamadı:', error);
+        document.getElementById('connection-status').textContent = 'Tek Oyunculu';
+      }
+    }
 
-        function addIncomingRequest(data, timestamp) {
-            const container = document.getElementById('incomingRequests');
-            
-            // İlk istek ise placeholder'ı kaldır
-            if (container.children.length === 1 && container.children[0].textContent.includes('Henüz gelen istek yok')) {
-                container.innerHTML = '';
+    // Pozisyon gönderimi
+    function sendPlayerPosition() {
+      if (socket && socket.connected) {
+        const now = Date.now();
+        if (now - lastPositionSend > 100) { // 100ms'de bir gönder
+          socket.emit('move', {
+            id: playerId,
+            x: player.position.x,
+            y: player.position.y,
+            z: player.position.z,
+            yaw: yaw,
+            pitch: pitch
+          });
+          lastPositionSend = now;
+        }
+      }
+    }
+
+    // Blok değişikliği gönderimi
+    function sendBlockChange(x, y, z, action, type) {
+      if (socket && socket.connected) {
+        socket.emit('blockAction', {
+          x, y, z, action, type
+        });
+      }
+    }
+
+    // Uzak oyuncular
+    function addRemotePlayer(playerData) {
+      const geometry = new THREE.BoxGeometry(0.8, 1.8, 0.8);
+      const material = new THREE.MeshLambertMaterial({ color: 0xff5555 });
+      const playerMesh = new THREE.Mesh(geometry, material);
+      
+      playerMesh.position.set(playerData.x, playerData.y, playerData.z);
+      scene.add(playerMesh);
+      
+      // Oyuncu adı etiketi
+      const label = document.createElement('div');
+      label.className = 'remote-player-label';
+      label.textContent = playerData.username || 'Oyuncu';
+      label.style.position = 'absolute';
+      document.body.appendChild(label);
+      
+      remotePlayers.set(playerData.id, {
+        mesh: playerMesh,
+        label: label,
+        data: playerData
+      });
+    }
+
+    function updateRemotePlayer(playerData) {
+      const remotePlayer = remotePlayers.get(playerData.id);
+      if (remotePlayer) {
+        remotePlayer.mesh.position.set(playerData.x, playerData.y, playerData.z);
+        remotePlayer.data = playerData;
+        
+        // Etiket pozisyonunu güncelle
+        const vector = remotePlayer.mesh.position.clone();
+        vector.project(camera);
+        const x = (vector.x * 0.5 + 0.5) * innerWidth;
+        const y = (-vector.y * 0.5 + 0.5) * innerHeight;
+        remotePlayer.label.style.left = x + 'px';
+        remotePlayer.label.style.top = y + 'px';
+      }
+    }
+
+    function removeRemotePlayer(playerId) {
+      const remotePlayer = remotePlayers.get(playerId);
+      if (remotePlayer) {
+        scene.remove(remotePlayer.mesh);
+        document.body.removeChild(remotePlayer.label);
+        remotePlayers.delete(playerId);
+      }
+    }
+
+    function updatePlayerCount() {
+      document.getElementById('player-count').textContent = remotePlayers.size + 1;
+    }
+
+    // === Chunk Sistemi ===
+    const chunks = new Map();
+    const loadedChunks = new Set();
+    const allBlocks = new Map();
+    const posKey = (x, y, z) => `${x},${y},${z}`;
+    const chunkKey = (cx, cz) => `${cx},${cz}`;
+    const boxGeo = new THREE.BoxGeometry(BLOCK, BLOCK, BLOCK);
+
+    // Chunk sınıfı
+    class Chunk {
+      constructor(cx, cz) {
+        this.cx = cx;
+        this.cz = cz;
+        this.blocks = new Map();
+        this.meshGroup = new THREE.Group();
+        this.loaded = false;
+        this.hasStructures = false;
+      }
+
+      addBlock(x, y, z, typeIndex) {
+        const key = posKey(x, y, z);
+        if (this.blocks.has(key)) return;
+
+        const material = new THREE.MeshLambertMaterial({ color: BLOCK_TYPES[typeIndex].colorTop });
+        const mesh = new THREE.Mesh(boxGeo, material);
+        mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
+        mesh.userData = { typeIndex, chunk: this };
+        
+        this.meshGroup.add(mesh);
+        this.blocks.set(key, mesh);
+        allBlocks.set(key, mesh);
+      }
+
+      removeBlock(x, y, z) {
+        const key = posKey(x, y, z);
+        const mesh = this.blocks.get(key);
+        if (!mesh) return;
+        
+        this.meshGroup.remove(mesh);
+        this.blocks.delete(key);
+        allBlocks.delete(key);
+      }
+
+      load() {
+        if (this.loaded) return;
+        
+        const startX = this.cx * CHUNK_SIZE;
+        const startZ = this.cz * CHUNK_SIZE;
+        const endX = Math.min(startX + CHUNK_SIZE, WORLD_SIZE);
+        const endZ = Math.min(startZ + CHUNK_SIZE, WORLD_SIZE);
+
+        // Katmanlı dünya oluşturma
+        for (let x = startX; x < endX; x++) {
+          for (let z = startZ; z < endZ; z++) {
+            for (let y = 0; y < WORLD_HEIGHT; y++) {
+              let type;
+              if (y === 0) {
+                type = 2; // Taş
+              } else if (y < 3) {
+                type = 2; // Taş
+              } else if (y < 6) {
+                type = 1; // Toprak
+              } else if (y === 6) {
+                type = 0; // Çimen
+              } else {
+                continue; // Boşluk
+              }
+              this.addBlock(x, y, z, type);
             }
-            
-            const requestDiv = document.createElement('div');
-            requestDiv.className = 'bg-white p-3 rounded border-l-4 border-green-500';
-            requestDiv.innerHTML = `
-                <div class="flex justify-between items-start">
-                    <p class="text-gray-800 flex-1">${data}</p>
-                    <span class="text-xs text-gray-500 ml-2">${timestamp}</span>
-                </div>
-            `;
-            
-            container.appendChild(requestDiv);
-            
-            // En yeni isteğe scroll
-            requestDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
         }
 
-        // Load saved content on page load
-        window.addEventListener('load', function() {
-            const saved = localStorage.getItem('savedContent');
-            if (saved) {
-                try {
-                    const data = JSON.parse(saved);
-                    displaySavedContent(data);
-                } catch (error) {
-                    console.error('Kaydedilmiş içerik yüklenemedi:', error);
-                }
-            }
-        });
+        scene.add(this.meshGroup);
+        this.loaded = true;
+        
+        // Yapıları oluştur
+        if (!this.hasStructures) {
+          this.generateStructures();
+          this.hasStructures = true;
+        }
+      }
 
-        // Add placeholder behavior to contenteditable
-        const editor = document.getElementById('content');
-        editor.addEventListener('focus', function() {
-            if (this.innerHTML === '<p>Buraya yazınızı yazabilirsiniz. Bu editör ile metninizi düzenleyebilir, paragraflar oluşturabilirsiniz.</p>') {
-                this.innerHTML = '';
-            }
-        });
+      generateStructures() {
+        const startX = this.cx * CHUNK_SIZE;
+        const startZ = this.cz * CHUNK_SIZE;
+        const endX = Math.min(startX + CHUNK_SIZE, WORLD_SIZE);
+        const endZ = Math.min(startZ + CHUNK_SIZE, WORLD_SIZE);
 
-        editor.addEventListener('blur', function() {
-            if (this.innerHTML.trim() === '' || this.innerHTML === '<br>') {
-                this.innerHTML = '<p>Buraya yazınızı yazabilirsiniz. Bu editör ile metninizi düzenleyebilir, paragraflar oluşturabilirsiniz.</p>';
+        // Maden damarları
+        this.generateOreVeins(startX, startZ, endX, endZ);
+      }
+
+      generateOreVeins(startX, startZ, endX, endZ) {
+        // Kömür damarları
+        const coalCount = Math.floor(Math.random() * 3);
+        for (let i = 0; i < coalCount; i++) {
+          const x = startX + Math.floor(Math.random() * (endX - startX));
+          const z = startZ + Math.floor(Math.random() * (endZ - startZ));
+          const y = 3 + Math.floor(Math.random() * 3);
+          if (y < WORLD_HEIGHT) {
+            this.addBlock(x, y, z, 4);
+          }
+        }
+        
+        // Demir damarları
+        if (Math.random() > 0.7) {
+          const x = startX + Math.floor(Math.random() * (endX - startX));
+          const z = startZ + Math.floor(Math.random() * (endZ - startZ));
+          const y = 2 + Math.floor(Math.random() * 2);
+          if (y < WORLD_HEIGHT) {
+            this.addBlock(x, y, z, 5);
+          }
+        }
+        
+        // Altın damarları
+        if (Math.random() > 0.9) {
+          const x = startX + Math.floor(Math.random() * (endX - startX));
+          const z = startZ + Math.floor(Math.random() * (endZ - startZ));
+          const y = 1;
+          if (y < WORLD_HEIGHT) {
+            this.addBlock(x, y, z, 6);
+          }
+        }
+        
+        // Elmas
+        if (Math.random() > 0.95) {
+          const x = startX + Math.floor(Math.random() * (endX - startX));
+          const z = startZ + Math.floor(Math.random() * (endZ - startZ));
+          const y = 0;
+          if (y < WORLD_HEIGHT) {
+            this.addBlock(x, y, z, 7);
+          }
+        }
+      }
+
+      unload() {
+        if (!this.loaded) return;
+        
+        scene.remove(this.meshGroup);
+        this.blocks.clear();
+        this.loaded = false;
+      }
+    }
+
+    // Chunk yönetimi
+    function getChunkCoords(x, z) {
+      return {
+        cx: Math.floor(x / CHUNK_SIZE),
+        cz: Math.floor(z / CHUNK_SIZE)
+      };
+    }
+
+    function getChunk(cx, cz) {
+      const key = chunkKey(cx, cz);
+      if (!chunks.has(key)) {
+        const chunk = new Chunk(cx, cz);
+        chunks.set(key, chunk);
+        return chunk;
+      }
+      return chunks.get(key);
+    }
+
+    function loadChunk(cx, cz) {
+      if (cx < 0 || cz < 0 || cx >= CHUNKS_X || cz >= CHUNKS_Z) return;
+      
+      const key = chunkKey(cx, cz);
+      if (loadedChunks.has(key)) return;
+
+      const chunk = getChunk(cx, cz);
+      chunk.load();
+      loadedChunks.add(key);
+    }
+
+    function unloadChunk(cx, cz) {
+      const key = chunkKey(cx, cz);
+      if (!loadedChunks.has(key)) return;
+
+      const chunk = getChunk(cx, cz);
+      chunk.unload();
+      loadedChunks.delete(key);
+    }
+
+    function updateLoadedChunks() {
+      const playerChunkX = Math.floor(player.position.x / CHUNK_SIZE);
+      const playerChunkZ = Math.floor(player.position.z / CHUNK_SIZE);
+
+      const chunksToKeep = new Set();
+
+      for (let cx = playerChunkX - RENDER_DISTANCE; cx <= playerChunkX + RENDER_DISTANCE; cx++) {
+        for (let cz = playerChunkZ - RENDER_DISTANCE; cz <= playerChunkZ + RENDER_DISTANCE; cz++) {
+          if (cx >= 0 && cz >= 0 && cx < CHUNKS_X && cz < CHUNKS_Z) {
+            const distance = Math.max(Math.abs(cx - playerChunkX), Math.abs(cz - playerChunkZ));
+            if (distance <= RENDER_DISTANCE) {
+              loadChunk(cx, cz);
+              chunksToKeep.add(chunkKey(cx, cz));
             }
+          }
+        }
+      }
+
+      for (const chunkKey of loadedChunks) {
+        if (!chunksToKeep.has(chunkKey)) {
+          const [cx, cz] = chunkKey.split(',').map(Number);
+          unloadChunk(cx, cz);
+        }
+      }
+    }
+
+    // Başlangıç chunk'larını yükle
+    function loadInitialChunks() {
+      const playerChunkX = Math.floor(player.position.x / CHUNK_SIZE);
+      const playerChunkZ = Math.floor(player.position.z / CHUNK_SIZE);
+      
+      for (let cx = playerChunkX - 1; cx <= playerChunkX + 1; cx++) {
+        for (let cz = playerChunkZ - 1; cz <= playerChunkZ + 1; cz++) {
+          if (cx >= 0 && cz >= 0 && cx < CHUNKS_X && cz < CHUNKS_Z) {
+            loadChunk(cx, cz);
+          }
+        }
+      }
+    }
+
+    // === Yapılar ===
+    
+    // Köy ekleme
+    function addVillage(vx, vz) {
+      let villageY = 0;
+      for (let y = WORLD_HEIGHT - 1; y >= 0; y--) {
+        if (allBlocks.has(posKey(vx, y, vz))) {
+          villageY = y + 1;
+          break;
+        }
+      }
+      
+      if (villageY < 7 || villageY > 8) return;
+      
+      addHouse(vx, villageY, vz, 3, 2);
+      addHouse(vx + 8, villageY, vz + 5, 2, 3);
+      addHouse(vx - 6, villageY, vz + 8, 3, 2);
+      addHouse(vx + 4, villageY, vz - 7, 2, 3);
+      addPath(vx, villageY - 1, vz);
+    }
+
+    // Ev ekleme
+    function addHouse(hx, hy, hz, wallType = 2, roofType = 3) {
+      for (let x = hx - 2; x <= hx + 2; x++) {
+        for (let z = hz - 2; z <= hz + 2; z++) {
+          const chunkCoords = getChunkCoords(x, z);
+          const chunk = getChunk(chunkCoords.cx, chunkCoords.cz);
+          chunk.addBlock(x, hy, z, roofType);
+        }
+      }
+      
+      for (let y = hy + 1; y <= hy + 3; y++) {
+        for (let x = hx - 2; x <= hx + 2; x++) {
+          const chunkCoords1 = getChunkCoords(x, hz - 2);
+          const chunk1 = getChunk(chunkCoords1.cx, chunkCoords1.cz);
+          chunk1.addBlock(x, y, hz - 2, wallType);
+          
+          const chunkCoords2 = getChunkCoords(x, hz + 2);
+          const chunk2 = getChunk(chunkCoords2.cx, chunkCoords2.cz);
+          chunk2.addBlock(x, y, hz + 2, wallType);
+        }
+        for (let z = hz - 1; z <= hz + 1; z++) {
+          const chunkCoords1 = getChunkCoords(hx - 2, z);
+          const chunk1 = getChunk(chunkCoords1.cx, chunkCoords1.cz);
+          chunk1.addBlock(hx - 2, y, z, wallType);
+          
+          const chunkCoords2 = getChunkCoords(hx + 2, z);
+          const chunk2 = getChunk(chunkCoords2.cx, chunkCoords2.cz);
+          chunk2.addBlock(hx + 2, y, z, wallType);
+        }
+      }
+      
+      for (let y = hy + 4; y <= hy + 5; y++) {
+        const offset = y - (hy + 3);
+        for (let x = hx - 2 + offset; x <= hx + 2 - offset; x++) {
+          for (let z = hz - 2 + offset; z <= hz + 2 - offset; z++) {
+            const chunkCoords = getChunkCoords(x, z);
+            const chunk = getChunk(chunkCoords.cx, chunkCoords.cz);
+            chunk.addBlock(x, y, z, roofType);
+          }
+        }
+      }
+      
+      const chunkCoords1 = getChunkCoords(hx, hy + 1);
+      const chunk1 = getChunk(chunkCoords1.cx, chunkCoords1.cz);
+      chunk1.removeBlock(hx, hy + 1, hz - 2);
+      
+      const chunkCoords2 = getChunkCoords(hx, hy + 2);
+      const chunk2 = getChunk(chunkCoords2.cx, chunkCoords2.cz);
+      chunk2.removeBlock(hx, hy + 2, hz - 2);
+    }
+
+    // Yol ekleme
+    function addPath(px, py, pz) {
+      for (let x = px - 15; x <= px + 15; x += 3) {
+        for (let z = pz - 1; z <= pz + 1; z++) {
+          const chunkCoords = getChunkCoords(x, z);
+          const chunk = getChunk(chunkCoords.cx, chunkCoords.cz);
+          chunk.addBlock(x, py, z, 1);
+        }
+      }
+      
+      for (let z = pz - 15; z <= pz + 15; z += 3) {
+        for (let x = px - 1; x <= px + 1; x++) {
+          const chunkCoords = getChunkCoords(x, z);
+          const chunk = getChunk(chunkCoords.cx, chunkCoords.cz);
+          chunk.addBlock(x, py, z, 1);
+        }
+      }
+    }
+
+    // Ağaç ekleme
+    function addTree(tx, tz) {
+      let baseY = 0;
+      for (let y = WORLD_HEIGHT - 1; y >= 0; y--) {
+        if (allBlocks.has(posKey(tx, y, tz))) {
+          baseY = y + 1;
+          break;
+        }
+      }
+      
+      if (baseY < 7 || baseY > 9) return;
+      
+      const height = 3 + Math.floor(Math.random() * 2);
+      for (let i = 0; i < height; i++) {
+        if (baseY + i < WORLD_HEIGHT) {
+          const chunkCoords = getChunkCoords(tx, tz);
+          const chunk = getChunk(chunkCoords.cx, chunkCoords.cz);
+          chunk.addBlock(tx, baseY + i, tz, 3);
+        }
+      }
+      
+      const cy = baseY + height;
+      const leaves = [
+        [0,0,0],[1,0,0],[-1,0,0],[0,0,1],[0,0,-1],
+        [1,0,1],[1,0,-1],[-1,0,1],[-1,0,-1],
+        [0,1,0],[1,1,0],[-1,1,0],[0,1,1],[0,1,-1]
+      ];
+      
+      leaves.forEach(([dx,dy,dz])=> {
+        if (Math.random() > 0.3 && cy+dy < WORLD_HEIGHT) {
+          const chunkCoords = getChunkCoords(tx+dx, tz+dz);
+          const chunk = getChunk(chunkCoords.cx, chunkCoords.cz);
+          chunk.addBlock(tx+dx, cy+dy, tz+dz, 0);
+        }
+      });
+    }
+
+    // Global yapılar
+    function generateGlobalStructures() {
+      addVillage(30, 30);
+      addVillage(90, 40);
+      addVillage(60, 90);
+      
+      for (let i = 0; i < 40; i++) {
+        const x = Math.floor(Math.random() * (WORLD_SIZE - 10)) + 5;
+        const z = Math.floor(Math.random() * (WORLD_SIZE - 10)) + 5;
+        addTree(x, z);
+      }
+    }
+
+    // === Düşen eşya sistemi ===
+    const droppedItems = new Map();
+    let itemIdCounter = 0;
+
+    function createDroppedItem(x, y, z, typeIndex) {
+      const type = BLOCK_TYPES[typeIndex];
+      const itemId = itemIdCounter++;
+      
+      const itemGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+      const itemMat = new THREE.MeshLambertMaterial({ color: type.colorTop });
+      const itemMesh = new THREE.Mesh(itemGeo, itemMat);
+      
+      const velocity = new THREE.Vector3(
+        (Math.random() - 0.5) * 3,
+        2,
+        (Math.random() - 0.5) * 3
+      );
+      
+      itemMesh.position.set(x + 0.5, y + 0.5, z + 0.5);
+      itemMesh.userData = { 
+        typeIndex, 
+        velocity, 
+        itemId,
+        createdAt: Date.now()
+      };
+      
+      scene.add(itemMesh);
+      droppedItems.set(itemId, itemMesh);
+      
+      return itemId;
+    }
+
+    function removeDroppedItem(itemId) {
+      const itemMesh = droppedItems.get(itemId);
+      if (itemMesh) {
+        scene.remove(itemMesh);
+        droppedItems.delete(itemId);
+      }
+    }
+
+    // === Kırılma sistemi ===
+    let breakingBlock = null;
+    let breakStartTime = 0;
+    let breakProgress = 0;
+    const breakProgressElement = document.getElementById('break-progress');
+    const breakProgressBar = document.getElementById('break-progress-bar');
+
+    function startBreakingBlock(x, y, z) {
+      const key = posKey(x, y, z);
+      const mesh = allBlocks.get(key);
+      
+      if (mesh) {
+        breakingBlock = { x, y, z, key, mesh };
+        breakStartTime = Date.now();
+        breakProgress = 0;
+        breakProgressElement.style.display = 'block';
+      }
+    }
+
+    function stopBreakingBlock() {
+      breakingBlock = null;
+      breakProgress = 0;
+      breakProgressElement.style.display = 'none';
+      breakProgressBar.style.width = '0%';
+    }
+
+    function updateBreakingProgress() {
+      if (!breakingBlock) return false;
+      
+      const mesh = allBlocks.get(breakingBlock.key);
+      if (!mesh) {
+        stopBreakingBlock();
+        return false;
+      }
+      
+      const typeIndex = mesh.userData.typeIndex;
+      const blockType = BLOCK_TYPES[typeIndex];
+      const breakTime = blockType.breakTime * 1000;
+      
+      const elapsed = Date.now() - breakStartTime;
+      breakProgress = Math.min(1, elapsed / breakTime);
+      
+      breakProgressBar.style.width = (breakProgress * 100) + '%';
+      
+      if (breakProgress >= 1) {
+        removeBlock(breakingBlock.x, breakingBlock.y, breakingBlock.z);
+        stopBreakingBlock();
+        return true;
+      }
+      
+      return false;
+    }
+
+    function removeBlock(x, y, z, fromServer = false) {
+      const key = posKey(x, y, z);
+      const mesh = allBlocks.get(key);
+      if (!mesh) return;
+      
+      createDroppedItem(x, y, z, mesh.userData.typeIndex);
+      
+      const chunkCoords = getChunkCoords(x, z);
+      const chunk = getChunk(chunkCoords.cx, chunkCoords.cz);
+      chunk.removeBlock(x, y, z);
+      
+      // Sunucuya bildir (kendi yaptığımız değişiklik)
+      if (!fromServer) {
+        sendBlockChange(x, y, z, 'remove', mesh.userData.typeIndex);
+      }
+    }
+
+    function addBlock(x, y, z, typeIndex = currentBlockType, fromServer = false) {
+      if (y >= WORLD_HEIGHT || y < 0) return;
+      const chunkCoords = getChunkCoords(x, z);
+      const chunk = getChunk(chunkCoords.cx, chunkCoords.cz);
+      chunk.addBlock(x, y, z, typeIndex);
+      
+      // Sunucuya bildir (kendi yaptığımız değişiklik)
+      if (!fromServer) {
+        sendBlockChange(x, y, z, 'add', typeIndex);
+      }
+    }
+
+    // Dünya oluştur
+    loadInitialChunks();
+    generateGlobalStructures();
+
+    // === Kontroller ===
+    const keys = { w:false, a:false, s:false, d:false, shift:false };
+    
+    // === Envater Sistemi ===
+    
+    let inventoryVisible = false;
+    let inventoryItems = {};
+    let selectedInventorySlot = 0;
+    
+    const inventoryElement = document.getElementById('inventory');
+    const inventoryGrid = document.getElementById('inventoryGrid');
+    
+    function createInventory() {
+      inventoryGrid.innerHTML = '';
+      
+      for (let i = 0; i < 27; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'inventory-slot';
+        slot.dataset.index = i;
+        
+        updateInventorySlot(slot, i);
+        
+        slot.addEventListener('click', () => {
+          selectInventorySlot(i);
         });
-    </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96a7f1794655411f',t:'MTc1NDQxNDE5Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+        
+        inventoryGrid.appendChild(slot);
+      }
+      
+      BLOCK_TYPES.forEach((type, index) => {
+        inventoryItems[index] = 16;
+      });
+      
+      updateInventoryDisplay();
+    }
+    
+    function updateInventorySlot(slotElement, index) {
+      const typeIndex = Math.floor(index / 9);
+      const type = BLOCK_TYPES[typeIndex];
+      
+      if (type) {
+        slotElement.textContent = type.label;
+        slotElement.style.backgroundColor = `rgba(${(type.colorTop >> 16) & 0xFF}, ${(type.colorSide >> 8) & 0xFF}, ${type.colorSide & 0xFF}, 0.3)`;
+        
+        if (inventoryItems[typeIndex] > 0) {
+          const count = document.createElement('div');
+          count.className = 'item-count';
+          count.textContent = inventoryItems[typeIndex];
+          slotElement.appendChild(count);
+        }
+      }
+    }
+    
+    function updateInventoryDisplay() {
+      const slots = inventoryGrid.querySelectorAll('.inventory-slot');
+      slots.forEach((slot, index) => {
+        updateInventorySlot(slot, index);
+      });
+    }
+    
+    function selectInventorySlot(index) {
+      selectedInventorySlot = index;
+      const slots = inventoryGrid.querySelectorAll('.inventory-slot');
+      slots.forEach((slot, i) => {
+        slot.classList.toggle('selected', i === index);
+      });
+      
+      const blockTypeIndex = Math.floor(index / 9);
+      if (blockTypeIndex < BLOCK_TYPES.length) {
+        currentBlockType = blockTypeIndex;
+        updateHotbar();
+      }
+    }
+    
+    function toggleInventory() {
+      inventoryVisible = !inventoryVisible;
+      inventoryElement.classList.toggle('visible', inventoryVisible);
+      
+      if (inventoryVisible) {
+        if (document.pointerLockElement === renderer.domElement) {
+          document.exitPointerLock();
+        }
+        stopBreakingBlock();
+      } else {
+        renderer.domElement.requestPointerLock();
+      }
+    }
+    
+    createInventory();
+    
+    addEventListener('keydown', e=>{
+      if (inventoryVisible) {
+        if (e.code === 'KeyE') {
+          e.preventDefault();
+          toggleInventory();
+        } else if (e.code >= 'Digit1' && e.code <= 'Digit9') {
+          const slotIndex = parseInt(e.code.replace('Digit', '')) - 1;
+          selectInventorySlot(slotIndex);
+        }
+        return;
+      }
+      
+      if (e.code === 'KeyW') keys.w = true; 
+      else if (e.code === 'KeyA') keys.a = true; 
+      else if (e.code === 'KeyS') keys.s = true; 
+      else if (e.code === 'KeyD') keys.d = true; 
+      else if (e.code === 'ShiftLeft') keys.shift = true;
+      else if (e.code === 'Space') { 
+        if (canJump) { 
+          velocity.y = 12; 
+          canJump = false; 
+        } 
+      }
+      else if (e.code === 'Digit1') { currentBlockType = 0; updateHotbar(); } 
+      else if (e.code === 'Digit2') { currentBlockType = 1; updateHotbar(); } 
+      else if (e.code === 'Digit3') { currentBlockType = 2; updateHotbar(); } 
+      else if (e.code === 'Digit4') { currentBlockType = 3; updateHotbar(); }
+      else if (e.code === 'Digit5') { currentBlockType = 4; updateHotbar(); }
+      else if (e.code === 'Digit6') { currentBlockType = 5; updateHotbar(); }
+      else if (e.code === 'Digit7') { currentBlockType = 6; updateHotbar(); }
+      else if (e.code === 'Digit8') { currentBlockType = 7; updateHotbar(); }
+      else if (e.code === 'KeyG') { 
+        scene.fog ? (scene.fog=null) : (scene.fog = new THREE.Fog(0x87ceeb, 20, 60)); 
+      }
+      else if (e.code === 'KeyR') { 
+        const x = Math.floor(player.position.x + (Math.random() - 0.5) * 20);
+        const z = Math.floor(player.position.z + (Math.random() - 0.5) * 20);
+        addTree(x, z);
+      }
+      else if (e.code === 'KeyE') { 
+        e.preventDefault();
+        toggleInventory(); 
+      }
+    });
+
+    addEventListener('keyup', e=>{
+      if (inventoryVisible) return;
+      
+      if (e.code === 'KeyW') keys.w = false; 
+      else if (e.code === 'KeyA') keys.a = false; 
+      else if (e.code === 'KeyS') keys.s = false; 
+      else if (e.code === 'KeyD') keys.d = false; 
+      else if (e.code === 'ShiftLeft') keys.shift = false;
+    });
+
+    let lookActive = false, movedDuringDrag = false, lastX = 0, lastY = 0, yaw = 0, pitch = 0;
+    let mouseDown = false;
+    
+    renderer.domElement.addEventListener('mousedown', (e)=>{
+      if (inventoryVisible) return;
+      if (e.button === 0) {
+        mouseDown = true;
+        const hit = getTargetBlock();
+        if (hit) {
+          startBreakingBlock(hit.x, hit.y, hit.z);
+        }
+      }
+      lookActive = true; 
+      movedDuringDrag = false; 
+      lastX = e.clientX; 
+      lastY = e.clientY; 
+    });
+
+    addEventListener('mouseup', (e)=>{
+      if (inventoryVisible) return;
+      if (e.button === 0) {
+        mouseDown = false;
+        stopBreakingBlock();
+      }
+      if (!movedDuringDrag && e.button !== 0) handleBlockClick(e); 
+      lookActive = false; 
+    });
+
+    addEventListener('mousemove', (e)=>{
+      if (inventoryVisible || !lookActive) return;
+      const dx = e.clientX - lastX; 
+      const dy = e.clientY - lastY;
+      if (Math.abs(dx) > 1 || Math.abs(dy) > 1) movedDuringDrag = true;
+      lastX = e.clientX; 
+      lastY = e.clientY;
+      yaw -= dx * 0.0028; 
+      pitch -= dy * 0.0028;
+      pitch = Math.max(-Math.PI/2 + 0.05, Math.min(Math.PI/2 - 0.05, pitch));
+      player.rotation.y = yaw; 
+      camera.rotation.x = pitch;
+    });
+    
+    addEventListener('contextmenu', e=> e.preventDefault());
+
+    // === Blok kır/yerleştir ===
+    const raycaster = new THREE.Raycaster();
+    function getTargetBlock(){
+      raycaster.setFromCamera({x:0, y:0}, camera);
+      const intersects = raycaster.intersectObjects([...allBlocks.values()], false);
+      if (intersects.length > 0) {
+        const inter = intersects[0];
+        const p = inter.object.position.clone().addScalar(-0.5);
+        return { 
+          x: Math.round(p.x), 
+          y: Math.round(p.y), 
+          z: Math.round(p.z), 
+          normal: inter.face.normal.clone() 
+        };
+      }
+      return null;
+    }
+
+    function handleBlockClick(e){
+      if (inventoryVisible) return;
+      
+      const hit = getTargetBlock();
+      if (!hit) return;
+      
+      if (e.button === 2){
+        const nx = hit.x + hit.normal.x, 
+              ny = hit.y + hit.normal.y, 
+              nz = hit.z + hit.normal.z;
+        
+        const playerBox = new THREE.Box3().setFromCenterAndSize(
+          player.position, 
+          new THREE.Vector3(0.6, 1.6, 0.6)
+        );
+        const blockBox = new THREE.Box3().setFromCenterAndSize(
+          new THREE.Vector3(nx+0.5, ny+0.5, nz+0.5), 
+          new THREE.Vector3(1,1,1)
+        );
+        
+        if(!playerBox.intersectsBox(blockBox) && ny < WORLD_HEIGHT && ny >= 0) {
+          addBlock(nx, ny, nz, currentBlockType);
+        }
+      }
+    }
+
+    function isBlockAt(x, y, z) {
+      return allBlocks.has(posKey(Math.floor(x), Math.floor(y), Math.floor(z)));
+    }
+
+    // === Fizik/yer çekimi ve hareket ===
+    const velocity = new THREE.Vector3();
+    const direction = new THREE.Vector3();
+    const up = new THREE.Vector3(0,1,0);
+    let canJump = false;
+    const clock = new THREE.Clock();
+
+    // Debug bilgisi
+    const fpsCounter = document.getElementById('fps-counter');
+    const chunkCounter = document.getElementById('chunk-counter');
+    const blockCounter = document.getElementById('block-counter');
+    let frameCount = 0;
+    let lastFpsUpdate = 0;
+
+    function animate(){
+      requestAnimationFrame(animate);
+      
+      if (inventoryVisible) {
+        renderer.render(scene, camera);
+        return;
+      }
+      
+      const delta = Math.min(0.05, clock.getDelta());
+      const elapsedTime = clock.getElapsedTime();
+
+      // FPS hesaplama
+      frameCount++;
+      if (elapsedTime - lastFpsUpdate >= 1) {
+        fpsCounter.textContent = frameCount;
+        chunkCounter.textContent = loadedChunks.size;
+        blockCounter.textContent = allBlocks.size;
+        frameCount = 0;
+        lastFpsUpdate = elapsedTime;
+      }
+
+      // Chunk sistemini güncelle
+      updateLoadedChunks();
+
+      // Kırılma ilerlemesini güncelle
+      if (mouseDown && breakingBlock) {
+        updateBreakingProgress();
+      }
+
+      // Düşen eşyaları güncelle
+      updateDroppedItems(delta);
+
+      // Pozisyon gönderimi
+      sendPlayerPosition();
+
+      // Yürüme yönü
+      const forward = new THREE.Vector3(0,0,-1).applyAxisAngle(up, yaw);
+      const right = new THREE.Vector3().crossVectors(up, forward);
+      direction.set(0,0,0);
+      if (keys.w) direction.add(forward); 
+      if (keys.s) direction.sub(forward);
+      if (keys.a) direction.add(right); 
+      if (keys.d) direction.sub(right);
+      if (direction.lengthSq() > 0) direction.normalize();
+
+      const speed = (keys.shift ? 8 : 4);
+      velocity.x = direction.x * speed;
+      velocity.z = direction.z * speed;
+      velocity.y -= 20 * delta;
+
+      // Çarpışma fiziği
+      const playerWidth = 0.2;
+      const playerHeight = 1.5;
+      const pos = player.position;
+
+      const newX = pos.x + velocity.x * delta;
+      if (!isBlockAt(newX + (velocity.x > 0 ? playerWidth : -playerWidth), pos.y, pos.z) &&
+          !isBlockAt(newX + (velocity.x > 0 ? playerWidth : -playerWidth), pos.y + 1, pos.z)) {
+        pos.x = newX;
+      }
+
+      const newZ = pos.z + velocity.z * delta;
+      if (!isBlockAt(pos.x, pos.y, newZ + (velocity.z > 0 ? playerWidth : -playerWidth)) &&
+          !isBlockAt(pos.x, pos.y + 1, newZ + (velocity.z > 0 ? playerWidth : -playerWidth))) {
+        pos.z = newZ;
+      }
+
+      const newY = pos.y + velocity.y * delta;
+      
+      if (velocity.y <= 0) {
+        const footY = newY;
+        if (isBlockAt(pos.x, footY, pos.z)) {
+          pos.y = Math.floor(footY) + 1;
+          velocity.y = 0;
+          canJump = true;
+        } else {
+          pos.y = newY;
+        }
+      } else {
+        const headY = newY + playerHeight;
+        if (isBlockAt(pos.x, headY, pos.z)) {
+          pos.y = Math.floor(headY) - playerHeight;
+          velocity.y = 0;
+        } else {
+          pos.y = newY;
+        }
+      }
+
+      // Blok vurgulama
+      const target = getTargetBlock();
+      if (target) {
+        highlightMesh.position.set(target.x + 0.5, target.y + 0.5, target.z + 0.5);
+        highlightMesh.visible = true;
+      } else {
+        highlightMesh.visible = false;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    // === Düşen eşyaları güncelleme ===
+    function updateDroppedItems(delta) {
+      const currentTime = Date.now();
+      const pickupDistance = 1.5;
+      const playerPos = player.position.clone();
+      
+      for (const [itemId, itemMesh] of droppedItems) {
+        const userData = itemMesh.userData;
+        
+        if (currentTime - userData.createdAt > 20000) {
+          removeDroppedItem(itemId);
+          continue;
+        }
+        
+        userData.velocity.y -= 15 * delta;
+        itemMesh.position.add(userData.velocity.clone().multiplyScalar(delta));
+        
+        const groundY = Math.floor(itemMesh.position.y - 0.15);
+        if (isBlockAt(itemMesh.position.x, groundY, itemMesh.position.z)) {
+          itemMesh.position.y = groundY + 1.15;
+          userData.velocity.y = 0;
+          userData.velocity.x *= 0.7;
+          userData.velocity.z *= 0.7;
+        }
+        
+        const distanceToPlayer = itemMesh.position.distanceTo(playerPos);
+        if (distanceToPlayer < pickupDistance) {
+          removeDroppedItem(itemId);
+        }
+        
+        itemMesh.rotation.x += delta;
+        itemMesh.rotation.y += delta;
+      }
+    }
+
+    // Sunucuya bağlan
+    connectToServer();
+
+    animate();
+
+    addEventListener('resize', ()=>{
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+  </script>
+</body>
 </html>
