@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kişisel Web Sitesi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .editor {
+            min-height: 300px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .editor:focus {
+            border-color: #3b82f6;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-hover {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-16">
+        <div class="container mx-auto px-6 text-center">
+            <h1 class="text-5xl font-bold mb-4">Hoş Geldiniz</h1>
+            <p class="text-xl opacity-90">Modern ve işlevsel web siteniz</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-12">
+        <!-- Soru Cevap Section -->
+        <section class="mb-16">
+            <div class="bg-white rounded-lg shadow-lg p-8 card-hover">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
+                    <span class="mr-3">❓</span>
+                    SORU CEVAP
+                </h2>
+                <div class="mb-4">
+                    <label for="webhookUrl" class="block text-sm font-medium text-gray-700 mb-2">Webhook URL</label>
+                    <input type="url" id="webhookUrl" value="https://denizyasarakko.app.n8n.cloud/webhook-test/86cae530-ec9b-4625-88c3-b7b25d3b06f2" readonly
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600">
+                </div>
+                <div class="mb-6">
+                    <label for="webhookData" class="block text-sm font-medium text-gray-700 mb-2">Sorunuz</label>
+                    <textarea id="webhookData" rows="4" placeholder="Sorunuzu buraya yazın..." 
+                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"></textarea>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="testWebhook()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-semibold transition-colors">
+                        🧪 Test Et
+                    </button>
+                    <button onclick="sendWebhook()" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-lg font-semibold transition-colors">
+                        🚀 Gönder
+                    </button>
+                </div>
+                <div id="webhookStatus" class="mt-4 p-4 rounded-lg hidden"></div>
+            </div>
+        </section>
+
+        <!-- API Endpoint Section -->
+        <section class="mb-16">
+            <div class="bg-white rounded-lg shadow-lg p-8 card-hover">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
+                    <span class="mr-3">🔗</span>
+                    API ENDPOINT
+                </h2>
+                <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                    <p class="text-sm text-gray-600 mb-2">Bu siteye istek göndermek için:</p>
+                    <code class="text-blue-600 font-mono text-sm">window.postMessage({type: 'API_REQUEST', data: 'mesajınız'}, '*')</code>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h3 class="font-bold text-blue-800 mb-2">📨 Gelen İstekler:</h3>
+                    <div id="incomingRequests" class="space-y-2">
+                        <p class="text-gray-500 text-sm">Henüz gelen istek yok...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Yanıtlar Section -->
+        <section class="mb-16">
+            <div class="bg-white rounded-lg shadow-lg p-8 card-hover">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
+                    <span class="mr-3">💬</span>
+                    YANITLAR
+                </h2>
+                <div id="responseContainer" class="space-y-4">
+                    <p class="text-gray-500 text-center py-8">Henüz yanıt yok. Yukarıdan bir soru gönderin!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Text Editor Section -->
+        <section class="mb-16">
+            <div class="bg-white rounded-lg shadow-lg p-8 card-hover">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
+                    <span class="mr-3">✍️</span>
+                    Yazı Editörü
+                </h2>
+                <div class="mb-4">
+                    <label for="title" class="block text-sm font-medium text-gray-700 mb-2">Başlık</label>
+                    <input type="text" id="title" placeholder="Yazınızın başlığını girin..." 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <div class="mb-6">
+                    <label for="content" class="block text-sm font-medium text-gray-700 mb-2">İçerik</label>
+                    <div id="content" contenteditable="true" class="editor" placeholder="Yazınızı buraya yazın...">
+                        <p>Buraya yazınızı yazabilirsiniz. Bu editör ile metninizi düzenleyebilir, paragraflar oluşturabilirsiniz.</p>
+                    </div>
+                </div>
+                <div class="flex gap-4 mb-6">
+                    <button onclick="formatText('bold')" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg font-bold">B</button>
+                    <button onclick="formatText('italic')" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg italic">I</button>
+                    <button onclick="formatText('underline')" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg underline">U</button>
+                    <button onclick="clearContent()" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg">Temizle</button>
+                </div>
+                <button onclick="saveContent()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-semibold transition-colors">
+                    💾 Kaydet
+                </button>
+            </div>
+        </section>
+
+        <!-- Saved Content Display -->
+        <section>
+            <div class="bg-white rounded-lg shadow-lg p-8 card-hover">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
+                    <span class="mr-3">📄</span>
+                    Kaydedilen İçerik
+                </h2>
+                <div id="savedContent" class="min-h-32 p-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                    <p class="text-gray-500 text-center">Henüz kaydedilmiş içerik yok</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-16">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; 2024 Kişisel Web Sitesi. Tüm hakları saklıdır.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Text Editor Functions
+        function formatText(command) {
+            document.execCommand(command, false, null);
+            document.getElementById('content').focus();
+        }
+
+        function clearContent() {
+            if (confirm('İçeriği temizlemek istediğinizden emin misiniz?')) {
+                document.getElementById('content').innerHTML = '';
+                document.getElementById('title').value = '';
+            }
+        }
+
+        function saveContent() {
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').innerHTML;
+            
+            if (!title.trim() && !content.trim()) {
+                showNotification('Lütfen başlık veya içerik girin!', 'error');
+                return;
+            }
+
+            const savedData = {
+                title: title,
+                content: content,
+                timestamp: new Date().toLocaleString('tr-TR')
+            };
+
+            // Save to localStorage
+            localStorage.setItem('savedContent', JSON.stringify(savedData));
+            
+            // Display saved content
+            displaySavedContent(savedData);
+            
+            showNotification('İçerik başarıyla kaydedildi!', 'success');
+        }
+
+        function displaySavedContent(data) {
+            const savedContentDiv = document.getElementById('savedContent');
+            savedContentDiv.innerHTML = `
+                <div class="bg-white p-6 rounded-lg border">
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">${data.title || 'Başlıksız'}</h3>
+                    <div class="text-gray-600 mb-4">${data.content}</div>
+                    <p class="text-sm text-gray-500">Kaydedilme: ${data.timestamp}</p>
+                </div>
+            `;
+        }
+
+        // Webhook Functions
+        async function testWebhook() {
+            const url = document.getElementById('webhookUrl').value;
+            
+            showWebhookStatus('Test ediliyor...', 'info');
+
+            try {
+                const testData = "Bu bir test mesajıdır - " + new Date().toLocaleString('tr-TR');
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                        'Accept': 'text/plain'
+                    },
+                    body: testData,
+                    mode: 'no-cors' // CORS sorunlarını önlemek için
+                });
+
+                // no-cors modunda response.ok kontrol edilemez
+                showWebhookStatus('✅ Test mesajı gönderildi!', 'success');
+                
+            } catch (error) {
+                if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                    showWebhookStatus(`❌ Bağlantı hatası: URL erişilebilir değil veya CORS sorunu var.`, 'error');
+                } else {
+                    showWebhookStatus(`❌ Hata: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function sendWebhook() {
+            const url = document.getElementById('webhookUrl').value;
+            const dataText = document.getElementById('webhookData').value;
+            
+            if (!dataText.trim()) {
+                showNotification('Lütfen sorunuzu yazın!', 'error');
+                return;
+            }
+
+            showWebhookStatus('Soru gönderiliyor...', 'info');
+            
+            // Soruyu yanıtlar bölümüne ekle
+            addQuestionToResponse(dataText);
+
+            // CORS proxy kullanarak istek gönder
+            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+            
+            try {
+                const response = await fetch(proxyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain'
+                    },
+                    body: dataText
+                });
+
+                if (response.ok) {
+                    const responseText = await response.text();
+                    showWebhookStatus('✅ Sorunuz gönderildi ve yanıt alındı!', 'success');
+                    updateLastResponse(responseText);
+                } else {
+                    showWebhookStatus(`❌ Sunucu hatası: ${response.status} ${response.statusText}`, 'error');
+                    updateLastResponse(`Hata: ${response.status} - ${response.statusText}`);
+                }
+                
+            } catch (error) {
+                // Proxy başarısız olursa, doğrudan deneme (no-cors ile)
+                try {
+                    await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'text/plain'
+                        },
+                        body: dataText,
+                        mode: 'no-cors'
+                    });
+                    
+                    showWebhookStatus('✅ Soru gönderildi! (Yanıt CORS nedeniyle alınamadı)', 'success');
+                    updateLastResponse('Soru başarıyla gönderildi. CORS kısıtlaması nedeniyle yanıt görüntülenemiyor.');
+                    
+                } catch (finalError) {
+                    showWebhookStatus(`❌ Bağlantı hatası: ${error.message}`, 'error');
+                    updateLastResponse(`Bağlantı hatası: ${error.message}`);
+                }
+            }
+            
+            // Soruyu temizle
+            document.getElementById('webhookData').value = '';
+        }
+
+        function addQuestionToResponse(question) {
+            const container = document.getElementById('responseContainer');
+            
+            // İlk soru ise placeholder'ı kaldır
+            if (container.children.length === 1 && container.children[0].textContent.includes('Henüz yanıt yok')) {
+                container.innerHTML = '';
+            }
+            
+            const questionDiv = document.createElement('div');
+            questionDiv.className = 'bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg';
+            questionDiv.innerHTML = `
+                <div class="flex items-start">
+                    <span class="text-blue-600 font-bold mr-2">S:</span>
+                    <div class="flex-1">
+                        <p class="text-gray-800">${question}</p>
+                        <p class="text-xs text-gray-500 mt-2">${new Date().toLocaleString('tr-TR')}</p>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(questionDiv);
+            
+            // Yanıt için placeholder ekle
+            const responseDiv = document.createElement('div');
+            responseDiv.className = 'bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg';
+            responseDiv.innerHTML = `
+                <div class="flex items-start">
+                    <span class="text-green-600 font-bold mr-2">C:</span>
+                    <div class="flex-1">
+                        <p class="text-gray-600 italic">Yanıt bekleniyor...</p>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(responseDiv);
+            
+            // En son eklenen yanıta scroll
+            responseDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function updateLastResponse(response) {
+            const container = document.getElementById('responseContainer');
+            const responseElements = container.querySelectorAll('.bg-green-50');
+            
+            if (responseElements.length > 0) {
+                const lastResponse = responseElements[responseElements.length - 1];
+                lastResponse.innerHTML = `
+                    <div class="flex items-start">
+                        <span class="text-green-600 font-bold mr-2">C:</span>
+                        <div class="flex-1">
+                            <p class="text-gray-800 whitespace-pre-wrap">${response}</p>
+                            <p class="text-xs text-gray-500 mt-2">${new Date().toLocaleString('tr-TR')}</p>
+                        </div>
+                    </div>
+                `;
+                
+                // Yanıta scroll
+                lastResponse.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        function showWebhookStatus(message, type) {
+            const statusDiv = document.getElementById('webhookStatus');
+            statusDiv.className = `mt-4 p-4 rounded-lg ${
+                type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' :
+                type === 'error' ? 'bg-red-100 text-red-800 border border-red-200' :
+                'bg-blue-100 text-blue-800 border border-blue-200'
+            }`;
+            statusDiv.textContent = message;
+            statusDiv.classList.remove('hidden');
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+                type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+            }`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // API Endpoint functionality - Listen for incoming messages
+        window.addEventListener('message', function(event) {
+            // Güvenlik için origin kontrolü yapabilirsiniz
+            // if (event.origin !== 'https://trusted-domain.com') return;
+            
+            if (event.data && event.data.type === 'API_REQUEST') {
+                const requestData = event.data.data;
+                const timestamp = new Date().toLocaleString('tr-TR');
+                
+                // Gelen isteği göster
+                addIncomingRequest(requestData, timestamp);
+                
+                // Otomatik yanıt gönder (isteğe bağlı)
+                const response = {
+                    type: 'API_RESPONSE',
+                    data: `Mesajınız alındı: "${requestData}"`,
+                    timestamp: timestamp,
+                    status: 'success'
+                };
+                
+                // Yanıtı gönderen pencereye geri gönder
+                event.source.postMessage(response, event.origin);
+            }
+        });
+
+        function addIncomingRequest(data, timestamp) {
+            const container = document.getElementById('incomingRequests');
+            
+            // İlk istek ise placeholder'ı kaldır
+            if (container.children.length === 1 && container.children[0].textContent.includes('Henüz gelen istek yok')) {
+                container.innerHTML = '';
+            }
+            
+            const requestDiv = document.createElement('div');
+            requestDiv.className = 'bg-white p-3 rounded border-l-4 border-green-500';
+            requestDiv.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <p class="text-gray-800 flex-1">${data}</p>
+                    <span class="text-xs text-gray-500 ml-2">${timestamp}</span>
+                </div>
+            `;
+            
+            container.appendChild(requestDiv);
+            
+            // En yeni isteğe scroll
+            requestDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // Load saved content on page load
+        window.addEventListener('load', function() {
+            const saved = localStorage.getItem('savedContent');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    displaySavedContent(data);
+                } catch (error) {
+                    console.error('Kaydedilmiş içerik yüklenemedi:', error);
+                }
+            }
+        });
+
+        // Add placeholder behavior to contenteditable
+        const editor = document.getElementById('content');
+        editor.addEventListener('focus', function() {
+            if (this.innerHTML === '<p>Buraya yazınızı yazabilirsiniz. Bu editör ile metninizi düzenleyebilir, paragraflar oluşturabilirsiniz.</p>') {
+                this.innerHTML = '';
+            }
+        });
+
+        editor.addEventListener('blur', function() {
+            if (this.innerHTML.trim() === '' || this.innerHTML === '<br>') {
+                this.innerHTML = '<p>Buraya yazınızı yazabilirsiniz. Bu editör ile metninizi düzenleyebilir, paragraflar oluşturabilirsiniz.</p>';
+            }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96a7f1794655411f',t:'MTc1NDQxNDE5Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
