@@ -311,7 +311,7 @@
       try {
         // Socket.io client'ı yüklemeye çalış
         import('socket.io').then(({ default: io }) => {
-          socket = io('https://aimc-13.onrender.com'); // Gerçek sunucu adresinizi buraya yazın
+          socket = io('https://aimc-12.onrender.com'); // Gerçek sunucu adresinizi buraya yazın
           socket.on('connect', () => {
             document.getElementById('connection-status').textContent = 'Bağlandı';
             console.log('Sunucuya bağlandı:', socket.id);
@@ -432,18 +432,21 @@
     function addRemotePlayer(playerData) {
       // Oyuncu modeli için bir grup oluştur
       const playerGroup = new THREE.Group();
+      
       // Gövde (üst kısmı)
       const bodyGeometry = new THREE.BoxGeometry(0.6, 0.9, 0.3);
       const bodyMaterial = new THREE.MeshLambertMaterial({ color: 0x0000ff }); // Mavi gövde
       const bodyMesh = new THREE.Mesh(bodyGeometry, bodyMaterial);
       bodyMesh.position.y = 0.45; // Yarım yükseklik kadar yukarı
       playerGroup.add(bodyMesh);
+      
       // Kafa
       const headGeometry = new THREE.BoxGeometry(0.4, 0.4, 0.4);
       const headMaterial = new THREE.MeshLambertMaterial({ color: 0xffcc99 }); // Açık kahverengi kafa
       const headMesh = new THREE.Mesh(headGeometry, headMaterial);
       headMesh.position.y = 1.1; // Gövdenin üstünde
       playerGroup.add(headMesh);
+      
       // Kollar
       const armGeometry = new THREE.BoxGeometry(0.15, 0.7, 0.15);
       const armMaterial = new THREE.MeshLambertMaterial({ color: 0x000088 }); // Koyu mavi kollar
@@ -453,6 +456,7 @@
       const rightArmMesh = new THREE.Mesh(armGeometry, armMaterial);
       rightArmMesh.position.set(0.4, 0.45, 0); // Sağ tarafta, gövde seviyesinde
       playerGroup.add(rightArmMesh);
+      
       // Ayaklar (iki ayrı dikdörtgen)
       const legGeometry = new THREE.BoxGeometry(0.2, 0.8, 0.2);
       const legMaterial = new THREE.MeshLambertMaterial({ color: 0x000088 }); // Koyu mavi ayaklar
@@ -462,19 +466,23 @@
       const rightLegMesh = new THREE.Mesh(legGeometry, legMaterial);
       rightLegMesh.position.set(0.15, -0.4, 0); // Sağ altta
       playerGroup.add(rightLegMesh);
+      
       // Grubun başlangıç konumunu ayarla
       playerGroup.position.set(playerData.x, playerData.y, playerData.z);
+      
       // Sahneye ekle
       scene.add(playerGroup);
-      // Oyuncu adı etiketi (bu kısım aynı kalabilir)
+      
+      // Oyuncu adı etiketi
       const label = document.createElement('div');
       label.className = 'remote-player-label';
       label.textContent = playerData.username || 'Oyuncu';
       label.style.position = 'absolute';
       document.body.appendChild(label);
-      // Oyuncuyu haritaya ekle (mesh yerine group saklanır)
+      
+      // Oyuncuyu haritaya ekle
       remotePlayers.set(playerData.id, {
-        group: playerGroup, // Artık 'mesh' değil, 'group'
+        group: playerGroup,
         label: label,
         data: playerData
       });
@@ -484,12 +492,11 @@
     function updateRemotePlayer(playerData) {
       const remotePlayer = remotePlayers.get(playerData.id);
       if (remotePlayer) {
-        // Artık 'mesh' değil, 'group' pozisyonunu güncelle
+        // Grup pozisyonunu güncelle
         remotePlayer.group.position.set(playerData.x, playerData.y, playerData.z);
         remotePlayer.data = playerData;
-        // Etiket pozisyonunu güncelle (bu kısım büyük ölçüde aynı kalabilir ama referans nesne değişti)
-        // Grubun merkezi ayakların ortasında olduğu için, etiketin biraz yukarı çıkması gerekebilir
-        // Burada grup pozisyonu kullanılır
+        
+        // Etiket pozisyonunu güncelle
         const vector = remotePlayer.group.position.clone(); 
         vector.y += 1.3; // Kafanın üstüne yakın bir nokta
         vector.project(camera);
@@ -504,7 +511,7 @@
     function removeRemotePlayer(playerId) {
       const remotePlayer = remotePlayers.get(playerId);
       if (remotePlayer) {
-        // Artık 'mesh' değil, 'group' sahneden kaldırılır
+        // Grubu sahneden kaldır
         scene.remove(remotePlayer.group);
         document.body.removeChild(remotePlayer.label);
         remotePlayers.delete(playerId);
@@ -1283,4 +1290,3 @@
   </script>
 </body>
 </html>
-
