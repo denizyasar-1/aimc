@@ -3,6 +3,7 @@ import express from 'express';
 import http from 'http';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import path from 'path';
 
 const app = express();
 const server = createServer(app);
@@ -16,8 +17,6 @@ app.use(express.static('public'));
 
 // Ana sayfa
 app.get('/', (req, res) => {
-  res.send(`
-    app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 io.on('connection', (socket) => {
@@ -105,5 +104,6 @@ io.on('connection', (socket) => {
 server.listen(3000, () => {
   console.log('Sunucu http://localhost:3000 adresinde çalışıyor.');
 });
+
 
 
