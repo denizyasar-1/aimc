@@ -310,7 +310,7 @@
       try {
         // Socket.io client'ı yüklemeye çalış
         import('socket.io').then(({ default: io }) => {
-          socket = io('https://aimc-10.onrender.com'); // Gerçek sunucu adresinizi buraya yazın
+          socket = io('https://aimc-11.onrender.com'); // Gerçek sunucu adresinizi buraya yazın
           
           socket.on('connect', () => {
             document.getElementById('connection-status').textContent = 'Bağlandı';
@@ -1353,6 +1353,7 @@
 </body>
 
 </html>
+
 
 
 
