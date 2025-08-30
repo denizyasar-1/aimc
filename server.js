@@ -1,27 +1,34 @@
+```javascript
 import express from 'express';
 import http from 'http';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = createServer(app);
 const io = new Server(server);
 
+// Oyuncuları saklamak için harita
+const players = new Map();
+
 // Statik dosyaları servis et
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static('public'));
 
 // Ana sayfa
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Multiplayer Game</title>
+    </head>
+    <body>
+        <h1>Multiplayer Game Server is running</h1>
+        <p>Connect to the game using your client.</p>
+    </body>
+    </html>
+  `);
 });
-
-// Oyuncuları saklamak için harita
-const players = new Map();
 
 io.on('connection', (socket) => {
   console.log('Yeni oyuncu bağlandı:', socket.id);
@@ -36,7 +43,8 @@ io.on('connection', (socket) => {
       y: data.y,
       z: data.z,
       yaw: data.yaw,
-      pitch: data.pitch
+      pitch: data.pitch,
+      health: 100 // Can değeri
     });
     
     // Diğer tüm oyunculara katılma mesajı gönder
@@ -47,7 +55,8 @@ io.on('connection', (socket) => {
       y: data.y,
       z: data.z,
       yaw: data.yaw,
-      pitch: data.pitch
+      pitch: data.pitch,
+      health: 100 // Can bilgisi
     });
     
     // Yeni oyuncuya mevcut tüm oyuncuları gönder
@@ -76,7 +85,21 @@ io.on('connection', (socket) => {
         y: data.y,
         z: data.z,
         yaw: data.yaw,
-        pitch: data.pitch
+        pitch: data.pitch,
+        health: playerData.health // Can bilgisi de gönderiliyor
+      });
+    }
+  });
+  
+  // Can değişikliği için yeni olay
+  socket.on('updateHealth', (data) => {
+    const playerData = players.get(socket.id);
+    if (playerData) {
+      playerData.health = data.health;
+      // Diğer tüm oyunculara can değişikliği mesajı gönder
+      io.emit('playerHealthUpdated', {
+        id: socket.id,
+        health: data.health
       });
     }
   });
