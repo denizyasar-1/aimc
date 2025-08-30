@@ -1,3 +1,4 @@
+```javascript
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -311,7 +312,7 @@
       try {
         // Socket.io client'ı yüklemeye çalış
         import('socket.io').then(({ default: io }) => {
-          socket = io('https://aimc-14.onrender.com'); // Gerçek sunucu adresinizi buraya yazın
+          socket = io('https://aimc-15.onrender.com'); // Gerçek sunucu adresinizi buraya yazın
           socket.on('connect', () => {
             document.getElementById('connection-status').textContent = 'Bağlandı';
             console.log('Sunucuya bağlandı:', socket.id);
@@ -482,22 +483,21 @@
       
       // Oyuncuyu haritaya ekle
       remotePlayers.set(playerData.id, {
-        group: playerGroup,
+        mesh: playerGroup, // BU KISIM İŞTE DÜZELTME!
         label: label,
         data: playerData
       });
     }
 
-    // updateRemotePlayer fonksiyonunu da güncellemek gerekir
+    // updateRemotePlayer fonksiyonunu düzelttik
     function updateRemotePlayer(playerData) {
       const remotePlayer = remotePlayers.get(playerData.id);
       if (remotePlayer) {
-        // Grup pozisyonunu güncelle
-        remotePlayer.group.position.set(playerData.x, playerData.y, playerData.z);
+        // Eski sürümdeki doğru kullanım
+        remotePlayer.mesh.position.set(playerData.x, playerData.y, playerData.z);
         remotePlayer.data = playerData;
-        
         // Etiket pozisyonunu güncelle
-        const vector = remotePlayer.group.position.clone(); 
+        const vector = remotePlayer.mesh.position.clone(); 
         vector.y += 1.3; // Kafanın üstüne yakın bir nokta
         vector.project(camera);
         const x = (vector.x * 0.5 + 0.5) * innerWidth;
@@ -507,12 +507,12 @@
       }
     }
 
-    // removeRemotePlayer fonksiyonunu da güncellemek gerekir
+    // removeRemotePlayer fonksiyonunu düzelttik
     function removeRemotePlayer(playerId) {
       const remotePlayer = remotePlayers.get(playerId);
       if (remotePlayer) {
         // Grubu sahneden kaldır
-        scene.remove(remotePlayer.group);
+        scene.remove(remotePlayer.mesh);
         document.body.removeChild(remotePlayer.label);
         remotePlayers.delete(playerId);
       }
@@ -1290,4 +1290,3 @@
   </script>
 </body>
 </html>
-
