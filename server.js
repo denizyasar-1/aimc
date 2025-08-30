@@ -1,109 +1,102 @@
+import express from "express";
+import { createServer } from "http";
+import { Server } from "socket.io";
+import path from "path";
+import { fileURLToPath } from "url";
 
-import express from 'express';
-import http from 'http';
-import { createServer } from 'http';
-import { Server } from 'socket.io';
-import path from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = createServer(app);
-const io = new Server(server);
-
-// Oyuncuları saklamak için harita
-const players = new Map();
-
-// Statik dosyaları servis et
-app.use(express.static('public'));
-
-// Ana sayfa
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+const io = new Server(server, {
+  cors: { origin: "*" },
 });
-io.on('connection', (socket) => {
-  console.log('Yeni oyuncu bağlandı:', socket.id);
-  
-  // Oyuncu katıldığında
-  socket.on('join', (data) => {
-    const playerId = data.id;
-    players.set(playerId, {
-      id: playerId,
-      username: data.username,
-      x: data.x,
-      y: data.y,
-      z: data.z,
-      yaw: data.yaw,
-      pitch: data.pitch,
-      health: 100 // Can değeri
-    });
-    
-    // Diğer tüm oyunculara katılma mesajı gönder
-    io.emit('playerJoined', {
-      id: playerId,
-      username: data.username,
-      x: data.x,
-      y: data.y,
-      z: data.z,
-      yaw: data.yaw,
-      pitch: data.pitch,
-      health: 100 // Can bilgisi
-    });
-    
-    // Yeni oyuncuya mevcut tüm oyuncuları gönder
-    players.forEach((playerData, playerId) => {
-      if (playerId !== socket.id) {
-        socket.emit('playerJoined', playerData);
-      }
-    });
+
+// Public klasörünü servis et
+app.use(express.static(path.join(__dirname, "public")));
+
+// Oyuncuların durumlarını saklayacağımız yapı
+const players = new Map(); // id -> { id, x, y, hp, attacking }
+
+// Rastgele başlangıç pozisyonu
+function randomSpawn() {
+  return {
+    x: Math.random() * 800,
+    y: Math.random() * 600,
+  };
+}
+
+io.on("connection", (socket) => {
+  console.log("Yeni oyuncu bağlandı:", socket.id);
+
+  // Yeni oyuncuyu listeye ekle
+  const spawn = randomSpawn();
+  players.set(socket.id, {
+    id: socket.id,
+    x: spawn.x,
+    y: spawn.y,
+    hp: 10, // 10 kalp
+    attacking: false,
   });
-  
-  // Oyuncu hareket ettiğinde
-  socket.on('move', (data) => {
-    const playerData = players.get(socket.id);
-    if (playerData) {
-      // Pozisyonu güncelle
-      playerData.x = data.x;
-      playerData.y = data.y;
-      playerData.z = data.z;
-      playerData.yaw = data.yaw;
-      playerData.pitch = data.pitch;
-      
-      // Diğer tüm oyunculara hareket mesajı gönder
-      io.emit('playerMoved', {
-        id: socket.id,
-        x: data.x,
-        y: data.y,
-        z: data.z,
-        yaw: data.yaw,
-        pitch: data.pitch,
-        health: playerData.health // Can bilgisi de gönderiliyor
+
+  // Tüm oyunculara güncel listeyi gönder
+  io.emit("updatePlayers", Array.from(players.values()));
+
+  // Hareket verilerini al
+  socket.on("move", ({ x, y }) => {
+    const player = players.get(socket.id);
+    if (!player) return;
+    player.x = x;
+    player.y = y;
+
+    // Güncel oyuncu durumunu tüm istemcilere gönder
+    io.emit("updatePlayers", Array.from(players.values()));
+  });
+
+  // Saldırı olayı
+  socket.on("attack", (targetId) => {
+    const attacker = players.get(socket.id);
+    const target = players.get(targetId);
+    if (!attacker || !target) return;
+
+    // Saldırı menzili kontrolü (60 px)
+    const dx = attacker.x - target.x;
+    const dy = attacker.y - target.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    if (distance > 60) return;
+
+    // Hedefin canını düşür
+    target.hp -= 3; // 3 kalp hasar
+    if (target.hp <= 0) {
+      // Respawn noktası
+      const respawn = randomSpawn();
+      target.x = respawn.x;
+      target.y = respawn.y;
+      target.hp = 10;
+      io.to(target.id).emit("respawn", {
+        x: target.x,
+        y: target.y,
+        hp: target.hp,
       });
     }
+
+    // Güncellenmiş bilgileri herkese gönder
+    io.emit("updatePlayers", Array.from(players.values()));
   });
-  
-  // Can değişikliği için yeni olay
-  socket.on('updateHealth', (data) => {
-    const playerData = players.get(socket.id);
-    if (playerData) {
-      playerData.health = data.health;
-      // Diğer tüm oyunculara can değişikliği mesajı gönder
-      io.emit('playerHealthUpdated', {
-        id: socket.id,
-        health: data.health
-      });
-    }
-  });
-  
-  // Oyuncu ayrıldığında
-  socket.on('disconnect', () => {
-    console.log('Oyuncu ayrıldı:', socket.id);
+
+  // Oyuncu ayrıldığında listeden çıkar
+  socket.on("disconnect", () => {
     players.delete(socket.id);
-    io.emit('playerLeft', { id: socket.id });
+    io.emit("updatePlayers", Array.from(players.values()));
+    console.log("Oyuncu ayrıldı:", socket.id);
   });
 });
 
-server.listen(3000, () => {
-  console.log('Sunucu http://localhost:3000 adresinde çalışıyor.');
-});
-
+// PORT ayarı
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () =>
+  console.log(`Server ${PORT} portunda çalışıyor...`)
+);
 
 
