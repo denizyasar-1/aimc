@@ -17,19 +17,9 @@ app.use(express.static('public'));
 // Ana sayfa
 app.get('/', (req, res) => {
   res.send(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Multiplayer Game</title>
-    </head>
-    <body>
-        <h1>Multiplayer Game Server is running</h1>
-        <p>Connect to the game using your client.</p>
-    </body>
-    </html>
-  `);
+    app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-
 io.on('connection', (socket) => {
   console.log('Yeni oyuncu bağlandı:', socket.id);
   
@@ -115,3 +105,4 @@ io.on('connection', (socket) => {
 server.listen(3000, () => {
   console.log('Sunucu http://localhost:3000 adresinde çalışıyor.');
 });
+
