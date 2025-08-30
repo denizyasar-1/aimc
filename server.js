@@ -1,4 +1,4 @@
-```javascript
+
 import express from 'express';
 import http from 'http';
 import { createServer } from 'http';
@@ -105,4 +105,5 @@ io.on('connection', (socket) => {
 server.listen(3000, () => {
   console.log('Sunucu http://localhost:3000 adresinde çalışıyor.');
 });
+
 
