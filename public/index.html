@@ -179,16 +179,16 @@
       display: none;
       z-index: 100;
     }
-  </style>
-  <!-- Import map: three'ü modül olarak çözmek için. -->
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-      "socket.io": "https://cdn.socket.io/4.7.2/socket.io.esm.min.js"
-    }
+</style>
+<!-- Import map: three'ü modül olarak çözmek için. -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "socket.io": "https://cdn.socket.io/4.7.2/socket.io.esm.min.js"
   }
-  </script>
+}
+</script>
 </head>
 <body>
   <div id="ui">
@@ -234,10 +234,10 @@
   <script type="module">
     import * as THREE from 'three';
     // === Temel Ayarlar ===
-    const WORLD_SIZE = 128; // 128x128 dünya
+    const WORLD_SIZE = 64; // 128x128 dünya
     const WORLD_HEIGHT = 10; // 10 katman
     const CHUNK_SIZE = 16; // Her chunk 16x16
-    const RENDER_DISTANCE = 2; // 2 chunk render mesafesi
+    const RENDER_DISTANCE = 1; // 2 chunk render mesafesi
     const BLOCK = 1;
     let currentBlockType = 0;
     let playerId = 'player_' + Math.random().toString(36).substr(2, 9);
@@ -311,7 +311,7 @@
       try {
         // Socket.io client'ı yüklemeye çalış
         import('socket.io').then(({ default: io }) => {
-          socket = io('https://aimc-23.onrender.com'); // Gerçek sunucu adresinizi buraya yazın
+          socket = io('https://aimc-12.onrender.com'); // Gerçek sunucu adresinizi buraya yazın
           socket.on('connect', () => {
             document.getElementById('connection-status').textContent = 'Bağlandı';
             console.log('Sunucuya bağlandı:', socket.id);
@@ -554,9 +554,11 @@
         remotePlayer.label.style.top = y + 'px';
         
         // Can bar'ı güncelle
-        remotePlayer.healthBar.style.left = (x - 20) + 'px';
-        remotePlayer.healthBar.style.top = (y - 15) + 'px';
-        remotePlayer.healthBar.style.display = 'block';
+        if (remotePlayer.healthBar) {
+          remotePlayer.healthBar.style.left = (x - 20) + 'px';
+          remotePlayer.healthBar.style.top = (y - 15) + 'px';
+          remotePlayer.healthBar.style.display = 'block';
+        }
       }
     }
 
@@ -1357,6 +1359,5 @@
   </script>
 </body>
 </html>
-
 
 
