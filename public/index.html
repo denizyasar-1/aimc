@@ -1,4 +1,3 @@
-```javascript
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -312,7 +311,7 @@
       try {
         // Socket.io client'ı yüklemeye çalış
         import('socket.io').then(({ default: io }) => {
-          socket = io('https://aimc-19.onrender.com'); // Gerçek sunucu adresinizi buraya yazın
+          socket = io('https://aimc-20.onrender.com'); // Gerçek sunucu adresinizi buraya yazın
           socket.on('connect', () => {
             document.getElementById('connection-status').textContent = 'Bağlandı';
             console.log('Sunucuya bağlandı:', socket.id);
@@ -373,6 +372,16 @@
             // Saldırı efekti gösterebiliriz
             console.log('Saldırı alındı:', attackData);
           });
+          // Can güncelleme olayı
+          socket.on('playerHealthUpdated', (healthData) => {
+            if (healthData.id !== playerId) {
+              const remotePlayer = remotePlayers.get(healthData.id);
+              if (remotePlayer) {
+                remotePlayer.health = healthData.health;
+                updateHealthBar(remotePlayer);
+              }
+            }
+          });
         }).catch(error => {
           console.log('Socket.io yüklenemedi, tek oyunculu modda devam ediliyor');
           document.getElementById('connection-status').textContent = 'Tek Oyunculu';
@@ -429,6 +438,33 @@
       }
     }
 
+    // Can sistemini başlat
+    const playerHealth = 100; // Başlangıç canı
+    const maxHealth = 100;
+
+    // Can bar'ı oluşturma fonksiyonu
+    function createHealthBar(playerElement) {
+      const healthBar = document.createElement('div');
+      healthBar.className = 'health-bar';
+      healthBar.innerHTML = '<div class="health-fill"></div>';
+      healthBar.style.position = 'absolute';
+      healthBar.style.width = '40px';
+      healthBar.style.height = '5px';
+      healthBar.style.background = '#444';
+      healthBar.style.borderRadius = '2px';
+      healthBar.style.overflow = 'hidden';
+      healthBar.style.display = 'none';
+      
+      // Can dolgu elementi
+      const healthFill = healthBar.querySelector('.health-fill');
+      healthFill.style.height = '100%';
+      healthFill.style.background = '#ff5555';
+      healthFill.style.transition = 'width 0.3s';
+      
+      document.body.appendChild(healthBar);
+      return healthBar;
+    }
+
     // Uzak oyuncular
     function addRemotePlayer(playerData) {
       // Oyuncu modeli için bir grup oluştur
@@ -481,39 +517,70 @@
       label.style.position = 'absolute';
       document.body.appendChild(label);
       
+      // Can bar'ı oluştur
+      const healthBar = createHealthBar(label);
+      
       // Oyuncuyu haritaya ekle
       remotePlayers.set(playerData.id, {
-        mesh: playerGroup, // BU KISIM İŞTE DÜZELTME!
+        group: playerGroup,
         label: label,
-        data: playerData
+        healthBar: healthBar,
+         playerData,
+        health: maxHealth // Can değeri
       });
     }
 
-    // updateRemotePlayer fonksiyonunu düzelttik
+    // updateRemotePlayer fonksiyonunu güncelledik
     function updateRemotePlayer(playerData) {
       const remotePlayer = remotePlayers.get(playerData.id);
       if (remotePlayer) {
-        // Eski sürümdeki doğru kullanım
-        remotePlayer.mesh.position.set(playerData.x, playerData.y, playerData.z);
+        // Grup pozisyonunu güncelle
+        remotePlayer.group.position.set(playerData.x, playerData.y, playerData.z);
         remotePlayer.data = playerData;
+        
+        // Can değerini güncelle (eğer varsa)
+        if (playerData.health !== undefined) {
+          remotePlayer.health = playerData.health;
+          updateHealthBar(remotePlayer);
+        }
+        
         // Etiket pozisyonunu güncelle
-        const vector = remotePlayer.mesh.position.clone(); 
+        const vector = remotePlayer.group.position.clone(); 
         vector.y += 1.3; // Kafanın üstüne yakın bir nokta
         vector.project(camera);
         const x = (vector.x * 0.5 + 0.5) * innerWidth;
         const y = (-vector.y * 0.5 + 0.5) * innerHeight;
         remotePlayer.label.style.left = x + 'px';
         remotePlayer.label.style.top = y + 'px';
+        
+        // Can bar'ı güncelle
+        remotePlayer.healthBar.style.left = (x - 20) + 'px';
+        remotePlayer.healthBar.style.top = (y - 15) + 'px';
+        remotePlayer.healthBar.style.display = 'block';
       }
     }
 
-    // removeRemotePlayer fonksiyonunu düzelttik
+    // Can bar'ı güncelleme fonksiyonu
+    function updateHealthBar(remotePlayer) {
+      if (remotePlayer.healthBar) {
+        const healthFill = remotePlayer.healthBar.querySelector('.health-fill');
+        const healthPercent = (remotePlayer.health / maxHealth) * 100;
+        healthFill.style.width = healthPercent + '%';
+      }
+    }
+
+    // removeRemotePlayer fonksiyonunu güncelledik
     function removeRemotePlayer(playerId) {
       const remotePlayer = remotePlayers.get(playerId);
       if (remotePlayer) {
         // Grubu sahneden kaldır
-        scene.remove(remotePlayer.mesh);
+        scene.remove(remotePlayer.group);
+        // Etiketi kaldır
         document.body.removeChild(remotePlayer.label);
+        // Can bar'ı kaldır
+        if (remotePlayer.healthBar) {
+          document.body.removeChild(remotePlayer.healthBar);
+        }
         remotePlayers.delete(playerId);
       }
     }
@@ -1290,7 +1357,3 @@
   </script>
 </body>
 </html>
-
-
-
-
