@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 
 
 const app = express();
-const server = createServer.createServer(app);
+const server = createServer(app);
 const io = Server(server);
 
 
@@ -86,4 +86,5 @@ io.emit("updatePlayers", players);
 
 
 server.listen(3000, () => console.log("Server çalışıyor: http://localhost:3000"));
+
 
