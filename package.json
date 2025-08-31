@@ -1,0 +1,13 @@
+{
+"name": "mini-minecraft-clone",
+"version": "1.0.0",
+"description": "Basit voxel oyunu - multiplayer, crafting, inventory. Render uyumlu Node.js + Web client (Three.js).",
+"main": "server.js",
+"scripts": {
+"start": "node server.js"
+},
+"dependencies": {
+"express": "^4.18.2",
+"ws": "^8.13.0"
+}
+}
