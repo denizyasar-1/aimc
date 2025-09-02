@@ -11,11 +11,11 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static("public"));
 
-const GEMINI_API_KEY = process.env.AIzaSyAl-z0JPXDHTEzlR_mQd8qa6l6w6_jv6MU;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
 
 // 💡 Buradaki systemPrompt kısmını istediğin gibi değiştirebilirsin
-let systemPrompt = "Sen kullanıcıya yardım eden bir asistan rolündesin.";
+let systemPrompt = "sana gönderilen mesajı türkçe anlamlı bir metne çevir tamamen doğru olmasına gerek yok ama bu işlemi kullanıcıya başka bir soru sormadan yapmalısın";
 
 
 // Kullanıcı mesajını Gemini'ye gönderme endpointi
