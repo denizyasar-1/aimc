@@ -1,20 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html lang="tr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Mini Voxel Multiplayer</title>
-<link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gemini Chat</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="hud">
-<div id="hotbar"></div>
-<div id="inventory" class="hidden"></div>
-<div id="crafting" class="hidden"></div>
-<div id="status">WASD: hareket — E: envanter — F: yerleştir / Boşluk: zıpla — Fare tık: blok seç</div>
-</div>
-<canvas id="c"></canvas>
-<script src="https://cdn.jsdelivr.net/npm/three@0.156.0/build/three.min.js"></script>
-<script src="client.js"></script>
+  <div class="chat-container">
+    <h1>💬 Gemini Chatbot</h1>
+    <div id="chat-box"></div>
+
+    <div class="input-container">
+      <input type="text" id="message-input" placeholder="Mesajınızı yazın..." />
+      <button id="send-btn">Gönder</button>
+    </div>
+
+    <div class="system-prompt">
+      <textarea id="system-prompt-input" placeholder="Sistem promptunu buradan değiştirebilirsiniz..."></textarea>
+      <button id="update-prompt-btn">Sistem Promptunu Güncelle</button>
+    </div>
+  </div>
+  <script src="script.js"></script>
 </body>
 </html>
